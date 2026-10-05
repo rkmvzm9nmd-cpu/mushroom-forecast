@@ -24,47 +24,67 @@ def lattice(bbox, spacing):
     return lats, lons
 
 
-def fetch(bbox, spacing, timezone, batch=50):
-    lats, lons = lattice(bbox, spacing)
-    pts = [(la, lo) for la in lats for lo in lons]
-    results = []
-    for i in range(0, len(pts), batch):
-        chunk = pts[i:i + batch]
-        params = {
-            "latitude": ",".join(f"{p[0]:.4f}" for p in chunk),
-            "longitude": ",".join(f"{p[1]:.4f}" for p in chunk),
-            "daily": ",".join(VARS),
-            "past_days": PAST_DAYS, "forecast_days": FORECAST_DAYS,
-            "timezone": timezone,
-        }
-        for attempt in range(6):
-            r = requests.get(API, params=params, timeout=120)
+def _get_batch(chunk, timezone):
+    params = {
+        "latitude": ",".join(f"{p[0]:.4f}" for p in chunk),
+        "longitude": ",".join(f"{p[1]:.4f}" for p in chunk),
+        "daily": ",".join(VARS),
+        "past_days": PAST_DAYS, "forecast_days": FORECAST_DAYS,
+        "timezone": timezone,
+    }
+    for attempt in range(6):
+        try:
+            r = requests.get(API, params=params, timeout=(20, 90))
             if r.status_code == 200:
                 data = r.json()
-                results.extend(data if isinstance(data, list) else [data])
-                break
+                return data if isinstance(data, list) else [data]
             wait = 65 if r.status_code == 429 else 10 * (attempt + 1)
             log.warn(f"open-meteo HTTP {r.status_code} ({r.text[:120]}); retry in {wait}s")
-            time.sleep(wait)
-        else:
-            raise RuntimeError("open-meteo failed repeatedly")
-        time.sleep(4)  # stay well under the free per-minute limit
-    dates = results[0]["daily"]["time"]
+        except requests.RequestException as exc:
+            wait = 15 * (attempt + 1)
+            log.warn(f"open-meteo {exc.__class__.__name__}; retry in {wait}s")
+        time.sleep(wait)
+    return None
+
+
+def fetch(bbox, spacing, timezone, batch=25):
+    lats, lons = lattice(bbox, spacing)
     ny, nx = len(lats), len(lons)
+    pts = [(la, lo) for la in lats for lo in lons]
+    results = [None] * len(pts)
+    for i in range(0, len(pts), batch):
+        got = _get_batch(pts[i:i + batch], timezone)
+        if got is None:
+            log.warn(f"open-meteo: batch {i // batch + 1} failed; filling from neighbours")
+        else:
+            results[i:i + len(got)] = got
+        time.sleep(3)  # stay well under the free per-minute limit
+    ok = [k for k, r in enumerate(results) if r is not None]
+    if len(ok) < 0.7 * len(pts):
+        raise RuntimeError(f"open-meteo: only {len(ok)}/{len(pts)} points fetched")
+    dates = results[ok[0]]["daily"]["time"]
     out = {v: np.full((len(dates), ny, nx), np.nan, np.float32) for v in VARS}
-    elev = np.zeros((ny, nx), np.float32)
-    for k, res in enumerate(results):
+    elev = np.full((ny, nx), np.nan, np.float32)
+    for k in ok:
+        res = results[k]
         iy, ix = divmod(k, nx)
         elev[iy, ix] = res.get("elevation") or 0
         for v in VARS:
-            vals = res["daily"][v]
-            out[v][:, iy, ix] = [np.nan if x is None else x for x in vals]
+            out[v][:, iy, ix] = [np.nan if x is None else x for x in res["daily"][v]]
+    # points from failed batches: copy the nearest fetched point
+    missing = np.isnan(elev)
+    if missing.any():
+        from scipy.ndimage import distance_transform_edt
+        _, (iy, ix) = distance_transform_edt(missing, return_indices=True)
+        elev = elev[iy, ix]
+        for v in VARS:
+            out[v] = out[v][:, iy, ix]
     for v in VARS:  # fill occasional gaps along time
         a = out[v]
         if np.isnan(a).any():
             mean = np.nanmean(a, axis=0, keepdims=True)
             a[:] = np.where(np.isnan(a), np.nan_to_num(mean), a)
-    log.info(f"weather: {len(pts)} points, {dates[0]}..{dates[-1]}")
+    log.info(f"weather: {len(ok)}/{len(pts)} points fetched, {dates[0]}..{dates[-1]}")
     return {"dates": dates, "lats": lats, "lons": lons, "elev": elev,
             "P": out["precipitation_sum"], "Tmax": out["temperature_2m_max"],
             "Tmin": out["temperature_2m_min"]}
