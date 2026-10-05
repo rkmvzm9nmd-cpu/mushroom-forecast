@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14160f">
+<title>Mushroom Forecast</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map" aria-label="Map"></div>
+
+<header class="top">
+  <div class="brand">
+    <span class="title">Mushroom Forecast</span>
+    <button id="infoBtn" class="ghost small" aria-label="About this species">i</button>
+  </div>
+  <div id="chips" class="chips" role="tablist" aria-label="Species"></div>
+</header>
+
+<div class="fabs">
+  <button id="layersBtn" class="fab" aria-label="Map layers" title="Layers">
+    <svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5-10-5Zm-8.2 9L2 13l10 5 10-5-1.8-1L12 16l-8.2-4Zm0 4L2 17l10 5 10-5-1.8-1L12 20l-8.2-4Z"/></svg>
+  </button>
+  <button id="hotBtn" class="fab" aria-label="Best areas" title="Best areas">
+    <svg viewBox="0 0 24 24"><path d="M12 2c1 4 6 6 6 12a6 6 0 1 1-12 0c0-3 2-5 3-6 0 3 1 4 2 4 0-4-1-7 1-10Z"/></svg>
+  </button>
+  <button id="spotsBtn" class="fab" aria-label="Saved spots" title="Saved spots">
+    <svg viewBox="0 0 24 24"><path d="M6 2h12v20l-6-4-6 4V2Z"/></svg>
+  </button>
+  <button id="locBtn" class="fab" aria-label="Show my location" title="My location">
+    <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9 3h-2.1A7 7 0 0 0 13 5.1V3h-2v2.1A7 7 0 0 0 5.1 11H3v2h2.1a7 7 0 0 0 5.9 5.9V21h2v-2.1a7 7 0 0 0 5.9-5.9H21v-2Zm-9 6a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z"/></svg>
+  </button>
+</div>
+
+<footer class="bottom">
+  <div class="modes" role="tablist" aria-label="What to show">
+    <button data-mode="score" class="on">Likelihood</button>
+    <button data-mode="habitat">Habitat</button>
+    <button data-mode="wx">Weather</button>
+    <button data-mode="rain">Rain 14d</button>
+  </div>
+  <div id="days" class="days" role="tablist" aria-label="Day"></div>
+  <div class="legend">
+    <span id="legendLo">low</span><span id="legendBar" class="bar"></span><span id="legendHi">high</span>
+    <span id="updated" class="updated"></span>
+  </div>
+</footer>
+
+<section id="sheet" class="sheet" hidden>
+  <div class="sheet-head">
+    <h2 id="sheetTitle"></h2>
+    <button id="sheetClose" class="ghost" aria-label="Close">✕</button>
+  </div>
+  <div id="sheetBody" class="sheet-body"></div>
+</section>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

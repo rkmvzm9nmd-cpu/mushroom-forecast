@@ -1,0 +1,63 @@
+name: Daily forecast
+
+on:
+  schedule:
+    - cron: "17 3 * * *"   # ~05:17 Paris time (03:17 UTC in summer time)
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: forecast
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore static habitat layers
+        uses: actions/cache@v4
+        with:
+          path: cache/static
+          key: static-v1-${{ hashFiles('pipeline/static_layers.py', 'pipeline/grid.py', 'config/regions.yaml') }}-${{ github.run_id }}
+          restore-keys: |
+            static-v1-${{ hashFiles('pipeline/static_layers.py', 'pipeline/grid.py', 'config/regions.yaml') }}-
+
+      - name: Build forecast
+        env:
+          SPOTS_JSON: ${{ secrets.SPOTS_JSON }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python -m pipeline.run --out build/site --cache cache/static
+
+      - name: Upload site
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+
+  deploy:
+    needs: build
+    if: always() && needs.build.result != 'cancelled'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

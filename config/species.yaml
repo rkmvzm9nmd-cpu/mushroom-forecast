@@ -1,0 +1,160 @@
+# Rule-based habitat + weather models. Every factor is scored 0..1 and multiplied.
+#
+# habitat.host      : "grass" (open grassland) or a dict of forest-type weights.
+#                     Forest types come from IGN BD Foret in France:
+#                     beech, oak, chestnut, pine, sprucefir, mixedbroad, mixed, otherbroad.
+#                     `unknown_forest` is used where tree species are not mapped (outside France).
+# habitat.ph        : trapezoid [a, b, c, d] on topsoil pH (0 below a, 1 between b and c, 0 above d)
+# habitat.elev      : trapezoid on elevation (m)
+# habitat.damp      : 0..1, how much damp hollows / north slopes matter
+# weather.lag       : [min, max] days between soaking rain and fruiting
+# weather.rain_need : mm of rain inside the lag window for full score
+# weather.temp      : trapezoid on the 7-day mean temperature (°C)
+# weather.frost     : 0..1 sensitivity to recent hard frost
+# weather.season    : 12 monthly weights, Jan..Dec
+
+species:
+  - id: psilocybe
+    name: "Liberty cap"
+    latin: "Psilocybe semilanceata"
+    group: "Look, don't pick"
+    gbif: ["Psilocybe semilanceata"]
+    status: "Controlled substance in France: observe and photograph only."
+    notes: "Old grazed, unfertilised pasture on acidic soil; grows from dead grass roots, not dung. Cool, damp autumns."
+    lookalikes: "Inocybe and Conocybe/Pholiotina species (some deadly) grow in the same turf."
+    habitat:
+      host: grass
+      ph: [3.8, 4.6, 6.3, 7.4]
+      elev: [150, 500, 1500, 2000]
+      damp: 0.5
+    weather:
+      lag: [7, 21]
+      rain_need: 35
+      temp: [2, 5, 12, 16]
+      frost: 0.35
+      season: [0.2, 0.1, 0.05, 0.05, 0.05, 0.05, 0.1, 0.3, 0.8, 1.0, 1.0, 0.6]
+
+  - id: agaricus
+    name: "Field mushroom (rosé des prés)"
+    latin: "Agaricus campestris"
+    group: "Edible"
+    gbif: ["Agaricus campestris"]
+    status: ""
+    notes: "Grazed meadows, often in rings, after warm rain in late summer and early autumn."
+    lookalikes: "Deadly Amanitas (white gills, volva at base) and yellow-staining Agaricus xanthodermus."
+    habitat:
+      host: grass
+      ph: [4.8, 5.5, 7.6, 8.4]
+      elev: [0, 0, 1200, 1800]
+      damp: 0.2
+    weather:
+      lag: [5, 12]
+      rain_need: 25
+      temp: [9, 13, 20, 25]
+      frost: 1.0
+      season: [0, 0, 0, 0, 0.2, 0.6, 0.7, 0.9, 1.0, 0.8, 0.3, 0]
+
+  - id: boletus
+    name: "Cep (cèpe)"
+    latin: "Boletus edulis group"
+    group: "Edible"
+    gbif: ["Boletus edulis", "Boletus aereus", "Boletus reticulatus", "Boletus pinophilus"]
+    status: ""
+    notes: "Under beech, chestnut, oak, spruce and pine on acidic soil. Flushes 8-12 days after a soaking rain with mild nights."
+    lookalikes: "Bitter bolete (Tylopilus felleus, pink pores); red-pored boletes."
+    habitat:
+      host: {beech: 1.0, chestnut: 1.0, oak: 0.95, sprucefir: 0.85, pine: 0.7, mixed: 0.85, mixedbroad: 0.8, otherbroad: 0.35}
+      unknown_forest: 0.6
+      ph: [3.6, 4.3, 6.5, 7.8]
+      elev: [100, 300, 1600, 2000]
+      damp: 0.3
+    weather:
+      lag: [7, 14]
+      rain_need: 30
+      temp: [7, 11, 18, 23]
+      frost: 0.9
+      season: [0, 0, 0, 0, 0.3, 0.7, 0.8, 0.9, 1.0, 1.0, 0.6, 0.1]
+
+  - id: cantharellus
+    name: "Chanterelle (girolle)"
+    latin: "Cantharellus cibarius"
+    group: "Edible"
+    gbif: ["Cantharellus cibarius", "Cantharellus pallens"]
+    status: ""
+    notes: "Mossy banks under beech and oak on acidic soil; repeated moderate rain, tolerates warmth."
+    lookalikes: "False chanterelle (Hygrophoropsis aurantiaca); toxic Omphalotus olearius on wood."
+    habitat:
+      host: {beech: 1.0, oak: 1.0, chestnut: 0.9, mixedbroad: 0.85, mixed: 0.8, sprucefir: 0.6, pine: 0.5, otherbroad: 0.3}
+      unknown_forest: 0.6
+      ph: [3.6, 4.2, 6.0, 7.2]
+      elev: [0, 200, 1500, 1900]
+      damp: 0.4
+    weather:
+      lag: [5, 15]
+      rain_need: 25
+      temp: [9, 12, 21, 25]
+      frost: 0.8
+      season: [0, 0, 0, 0, 0.3, 0.8, 1.0, 1.0, 1.0, 0.7, 0.3, 0]
+
+  - id: craterellus_tubaeformis
+    name: "Winter chanterelle"
+    latin: "Craterellus tubaeformis"
+    group: "Edible"
+    gbif: ["Craterellus tubaeformis"]
+    status: ""
+    notes: "Damp, mossy conifer woods (spruce, fir), often in large troops. Late autumn into early winter; frost-tolerant."
+    lookalikes: "Small brown webcaps (Cortinarius, some deadly) in the same moss."
+    habitat:
+      host: {sprucefir: 1.0, mixed: 0.8, pine: 0.7, beech: 0.6, mixedbroad: 0.4, oak: 0.3, chestnut: 0.3, otherbroad: 0.2}
+      unknown_forest: 0.5
+      ph: [3.4, 4.0, 5.8, 6.8]
+      elev: [300, 700, 1800, 2100]
+      damp: 0.8
+    weather:
+      lag: [7, 21]
+      rain_need: 35
+      temp: [1, 4, 12, 16]
+      frost: 0.2
+      season: [0.4, 0.2, 0, 0, 0, 0, 0, 0.3, 0.8, 1.0, 1.0, 0.8]
+
+  - id: craterellus_cornucopioides
+    name: "Horn of plenty (trompette)"
+    latin: "Craterellus cornucopioides"
+    group: "Edible"
+    gbif: ["Craterellus cornucopioides"]
+    status: ""
+    notes: "Beech and oak leaf litter, often on richer or limestone soils, in damp hollows. Late, after steady rain."
+    lookalikes: "Few dangerous ones; easy to miss in dark litter."
+    habitat:
+      host: {beech: 1.0, oak: 0.8, mixedbroad: 0.75, mixed: 0.7, chestnut: 0.5, otherbroad: 0.5, sprucefir: 0.3, pine: 0.2}
+      unknown_forest: 0.5
+      ph: [4.4, 5.5, 8.0, 8.8]
+      elev: [0, 200, 1500, 1900]
+      damp: 0.8
+    weather:
+      lag: [10, 25]
+      rain_need: 40
+      temp: [5, 8, 15, 19]
+      frost: 0.6
+      season: [0, 0, 0, 0, 0, 0.2, 0.4, 0.8, 1.0, 1.0, 0.7, 0.2]
+
+  - id: hydnum
+    name: "Hedgehog (pied de mouton)"
+    latin: "Hydnum repandum"
+    group: "Edible"
+    gbif: ["Hydnum repandum", "Hydnum rufescens"]
+    status: ""
+    notes: "Mixed broadleaf and conifer woods on most soils; late autumn, survives light frosts."
+    lookalikes: "Few; check for spines (not gills or pores) under the cap."
+    habitat:
+      host: {beech: 1.0, mixed: 0.9, oak: 0.9, mixedbroad: 0.85, sprucefir: 0.8, chestnut: 0.7, pine: 0.6, otherbroad: 0.5}
+      unknown_forest: 0.6
+      ph: [3.8, 4.8, 7.8, 8.6]
+      elev: [0, 200, 1700, 2000]
+      damp: 0.5
+    weather:
+      lag: [10, 25]
+      rain_need: 35
+      temp: [2, 5, 14, 18]
+      frost: 0.3
+      season: [0.3, 0.1, 0, 0, 0, 0, 0.2, 0.6, 1.0, 1.0, 1.0, 0.6]

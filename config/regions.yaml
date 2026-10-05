@@ -1,0 +1,16 @@
+# Each region is modelled on its own Web-Mercator pixel grid.
+# To add a region (e.g. Romania), copy a block, change id/name/bbox/timezone,
+# and set bdforet: false (the French forest map only covers France).
+regions:
+  - id: massif-central-alps
+    name: "Lozère to Isère"
+    bbox: [3.3, 44.3, 6.1, 45.6]      # west, south, east, north (degrees)
+    zoom: 10                          # ~108 m pixels at this latitude
+    timezone: Europe/Paris
+    bdforet: true                     # IGN tree-species map (France only)
+    weather_spacing: 0.1              # degrees between weather sample points
+    places:
+      - {name: "Chastanier", lat: 44.726, lon: 3.755}
+      - {name: "Saint-Agrève", lat: 45.010, lon: 4.400}
+      - {name: "Pilat (Le Bessat)", lat: 45.360, lon: 4.530}
+      - {name: "Matheysine (La Mure)", lat: 44.950, lon: 5.800}
