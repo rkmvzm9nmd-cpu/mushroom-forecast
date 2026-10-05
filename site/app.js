@@ -398,7 +398,7 @@
   // ------------------------------------------------------------------ tap on map
   async function openPoint(latlng) {
     const { lat, lng } = latlng;
-    const popup = L.popup({ maxWidth: 280 }).setLatLng(latlng).setContent("Loading…").openOn(map);
+    const popup = L.popup({ maxWidth: 280, autoPanPaddingTopLeft: [10, 110], autoPanPaddingBottomRight: [64, 175] }).setLatLng(latlng).setContent("Loading…").openOn(map);
     const day = S.day, weather = S.meta.weather_ok;
     const rows = await Promise.all(S.index.species.map(async (s) => {
       const path = weather ? layerPath("score", s.id, day) : layerPath("habitat", s.id);
