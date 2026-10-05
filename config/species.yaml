@@ -28,7 +28,7 @@ species:
       elev: [150, 500, 1500, 2000]
       damp: 0.5
     weather:
-      lag: [7, 21]
+      lag: [10, 24]
       rain_need: 35
       temp: [2, 5, 12, 16]
       frost: 0.35

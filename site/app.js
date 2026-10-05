@@ -457,11 +457,12 @@
     const when = new Date(S.meta.generated);
     $("updated").textContent = "Updated " + when.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     const view = store.get("mf_view", null);
-    if (fit || !view) map.fitBounds(S.meta.grid.bounds);
+    const rb = L.latLngBounds(S.meta.grid.bounds);
+    if (fit || !view || view.z < 7 || !rb.contains([view.lat, view.lng])) map.fitBounds(rb);
     else map.setView([view.lat, view.lng], view.z);
     renderChips(); renderDays(); syncOverlays(); draw();
   }
-  map.on("moveend", () => { const c = map.getCenter(); store.set("mf_view", { lat: c.lat, lng: c.lng, z: map.getZoom() }); });
+  map.on("moveend", () => { if (!S.meta) return; const c = map.getCenter(); store.set("mf_view", { lat: c.lat, lng: c.lng, z: map.getZoom() }); });
 
   (async () => {
     setBase(S.base);

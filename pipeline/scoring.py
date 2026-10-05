@@ -18,18 +18,30 @@ def dry_run_length(P, wet_mm=1.0):
     return out
 
 
+def lag_weights(lag0, lag1, ramp_in=4, ramp_out=6):
+    """Weight of rain that fell k days ago (k = 0..lag1+ramp_out): rises over the
+    `ramp_in` days before lag0, full inside [lag0, lag1], fades over `ramp_out` days after."""
+    k = np.arange(lag1 + ramp_out + 1, dtype=np.float32)
+    up = np.clip((k - (lag0 - ramp_in)) / ramp_in, 0, 1)
+    down = np.clip(1 - (k - lag1) / ramp_out, 0, 1)
+    return np.minimum(up, down)
+
+
 def weather_scores(sp, P, Tmin, Tmax, dates, day_idx, dry=None):
     """Return list of (H, W) arrays, one per index in day_idx."""
     w = sp["weather"]
     lag0, lag1 = w["lag"]
     need = float(w["rain_need"])
+    wts = lag_weights(lag0, lag1)
     Tmean = (Tmin + Tmax) / 2
     if dry is None:
         dry = dry_run_length(P)
     out = []
     for t in day_idx:
-        a, b = max(t - lag1, 0), max(t - lag0 + 1, 0)
-        rain = P[a:b].sum(axis=0)
+        rain = np.zeros(P.shape[1:], np.float32)
+        for k, wk in enumerate(wts):
+            if wk > 0 and t - k >= 0:
+                rain += wk * P[t - k]
         rain_f = np.clip(rain / need, 0, 1)
         # top-up: most species also need some moisture in the last week
         recent = P[max(t - 6, 0):t + 1].sum(axis=0)
