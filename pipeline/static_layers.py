@@ -434,21 +434,38 @@ MOWING_COLLECTION = "clms_vlcc_grassland-mowing-events_europe_10m_yearly_v1"
 CDSE_STAC = "https://stac.dataspace.copernicus.eu/v1/search"
 
 
-def cdse_env():
-    """GDAL settings for reading Copernicus Data Space files straight from S3."""
-    import rasterio
-    key, secret = os.environ.get("CDSE_S3_KEY"), os.environ.get("CDSE_S3_SECRET")
-    if not (key and secret):
-        raise RuntimeError("CDSE_S3_KEY / CDSE_S3_SECRET not set")
-    return rasterio.Env(AWS_ACCESS_KEY_ID=key, AWS_SECRET_ACCESS_KEY=secret,
-                        AWS_S3_ENDPOINT="eodata.dataspace.copernicus.eu",
-                        AWS_VIRTUAL_HOSTING="FALSE", AWS_HTTPS="YES",
-                        GDAL_HTTP_MAX_RETRY="4", GDAL_HTTP_RETRY_DELAY="3")
+class cdse_env:
+    """Context manager: GDAL settings for reading Copernicus Data Space files from S3.
+    rasterio refuses AWS credentials passed as Env options, so they go in as
+    environment variables (which GDAL reads directly)."""
+    KEYS = ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_S3_ENDPOINT", "AWS_VIRTUAL_HOSTING",
+            "AWS_HTTPS", "AWS_NO_SIGN_REQUEST", "AWS_REGION")
+
+    def __enter__(self):
+        key, secret = os.environ.get("CDSE_S3_KEY"), os.environ.get("CDSE_S3_SECRET")
+        if not (key and secret):
+            raise RuntimeError("CDSE_S3_KEY / CDSE_S3_SECRET not set")
+        self._old = {k: os.environ.get(k) for k in self.KEYS}
+        os.environ.update({"AWS_ACCESS_KEY_ID": key.strip(), "AWS_SECRET_ACCESS_KEY": secret.strip(),
+                           "AWS_S3_ENDPOINT": "eodata.dataspace.copernicus.eu", "AWS_VIRTUAL_HOSTING": "FALSE",
+                           "AWS_HTTPS": "YES", "AWS_NO_SIGN_REQUEST": "NO", "AWS_REGION": "default"})
+        return self
+
+    def __exit__(self, *exc):
+        for k, v in self._old.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        return False
 
 
 def cdse_search(collection, bbox, **extra):
     body = {"collections": [collection], "bbox": list(bbox), "limit": 200, **extra}
     r = requests.post(CDSE_STAC, headers=UA, timeout=120, json=body)
+    if r.status_code == 400 and "sortby" in body:  # server without sort support
+        body.pop("sortby")
+        r = requests.post(CDSE_STAC, headers=UA, timeout=120, json=body)
     r.raise_for_status()
     return r.json().get("features", [])
 

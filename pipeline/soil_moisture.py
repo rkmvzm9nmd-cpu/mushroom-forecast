@@ -15,8 +15,11 @@ from scipy.ndimage import distance_transform_edt, map_coordinates
 from . import log
 from .static_layers import cdse_env, cdse_search
 
-SWI_COLLECTION = "clms_swi_europe_1km_daily_v2_cog"
-BAND = "swi010"
+# tried in order; the band is the topsoil-weighted index (T=10) or surface soil moisture
+SOURCES = [("clms_swi_europe_1km_daily_v2_cog", "swi010", "soil water index"),
+           ("clms_swi_europe_1km_daily_v1_cog", "swi010", "soil water index v1"),
+           ("clms_ssm_europe_1km_daily_v1_cog", "ssm", "surface soil moisture")]
+MAX_AGE_DAYS = 10
 
 
 def _decode(arr, src):
@@ -39,14 +42,30 @@ def latest(bbox, lon, lat, today):
     import rasterio
     from rasterio.windows import from_bounds
     w, s, e, n = bbox
-    start = (dt.date.fromisoformat(today) - dt.timedelta(days=12)).isoformat()
-    items = cdse_search(SWI_COLLECTION, bbox, datetime=f"{start}T00:00:00Z/{today}T23:59:59Z")
-    items.sort(key=lambda i: i["properties"].get("datetime", ""), reverse=True)
+    items, label, band = [], None, None
+    for coll, bnd, lab in SOURCES:
+        try:
+            got = cdse_search(coll, bbox, limit=10,
+                              sortby=[{"field": "properties.datetime", "direction": "desc"}])
+        except Exception as exc:
+            log.warn(f"{lab}: search failed ({exc.__class__.__name__}: {str(exc)[:120]})")
+            continue
+        got.sort(key=lambda i: i["properties"].get("datetime", ""), reverse=True)
+        newest = got[0]["properties"].get("datetime", "")[:10] if got else None
+        log.info(f"{lab} ({coll}): newest product {newest}")
+        if newest and (dt.date.fromisoformat(today) - dt.date.fromisoformat(newest)).days <= MAX_AGE_DAYS:
+            items, label, band = got, lab, bnd
+            break
     if not items:
-        raise RuntimeError("no recent soil water index products")
+        raise RuntimeError("no soil moisture product from the last 10 days")
     with cdse_env():
         for item in items[:5]:
-            href = item["assets"][BAND]["href"]
+            asset = item["assets"].get(band) or next(
+                (a for k, a in item["assets"].items() if k.startswith(band)), None)
+            if asset is None:
+                log.warn(f"{label}: no '{band}' asset in {item['id']} (assets: {list(item['assets'])[:12]})")
+                continue
+            href = asset["href"]
             path = "/vsis3/" + href[len("s3://"):]
             try:
                 with rasterio.open(path) as src:
@@ -57,12 +76,12 @@ def latest(bbox, lon, lat, today):
                     raw_stats = {int(k): int(c) for k, c in zip(*np.unique(raw, return_counts=True))} \
                         if raw.dtype == np.uint8 else {"min": float(np.nanmin(raw)), "max": float(np.nanmax(raw))}
             except Exception as exc:
-                log.warn(f"soil water index {item['id']}: {exc.__class__.__name__}: {str(exc)[:160]}")
+                log.warn(f"{label} {item['id']}: {exc.__class__.__name__}: {str(exc)[:160]}")
                 continue
             cover = float(np.isfinite(vals).mean())
             date = item["properties"]["datetime"][:10]
             if cover < 0.5:
-                log.warn(f"soil water index {date}: only {cover:.0%} valid, trying older")
+                log.warn(f"{label} {date}: only {cover:.0%} valid, trying older")
                 continue
             # fill gaps from nearest valid pixel, then bilinear-sample at the target points
             if np.isnan(vals).any():
@@ -71,7 +90,7 @@ def latest(bbox, lon, lat, today):
             col = (lon - tr.c) / tr.a - 0.5
             row = (lat - tr.f) / tr.e - 0.5
             out = map_coordinates(vals, [row, col], order=1, mode="nearest").astype(np.float32)
-            log.info(f"soil water index {date} (T=10): {cover:.0%} valid, regional mean {np.nanmean(out):.0f}% "
+            log.info(f"{label} {date}: {cover:.0%} valid, regional mean {np.nanmean(out):.0f}% "
                      f"(range {np.nanmin(out):.0f}-{np.nanmax(out):.0f}); raw values {str(raw_stats)[:200]}")
             return out, date
-    raise RuntimeError("no readable soil water index product in the last 12 days")
+    raise RuntimeError(f"no readable {label} product")
