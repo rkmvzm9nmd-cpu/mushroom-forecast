@@ -261,11 +261,15 @@ def bdforet(grid: Grid):
 
 # --------------------------------------------------------------------------- grassland (France: RPG)
 PASTURE_TYPES = ["permanent", "rough", "temporary"]
+# RPG crop groups that are ploughed / cultivated land (arable, fallow, annual forage),
+# plus orchards and vines: none of these is old undisturbed grassland.
+TILLED_GROUPS = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "11", "14", "15", "16",
+                 "20", "21", "22", "23", "24", "25", "26"}
 
 
 def classify_pasture(p):
     """RPG declared parcel -> 1 permanent pasture, 2 rough grazing / summer pasture,
-    3 temporary grassland, 0 other crops."""
+    3 temporary (re-sown) grassland, 4 tilled or cultivated land, 0 other."""
     group = str(p.get("code_group") or "")
     code = str(p.get("code_cultu") or "").upper()
     if code in ("PPH", "SPH") or group == "18":
@@ -274,16 +278,20 @@ def classify_pasture(p):
         return 2, f"rough/estive ({code})"
     if group == "19" or code in ("PTR", "PRL"):
         return 3, f"temporary ({code})"
+    if group in TILLED_GROUPS:
+        return 4, f"tilled/cultivated group {group}"
     return 0, f"other group {group}"
 
 
 def rpg(grid: Grid):
-    feats = wfs_features("RPG.LATEST:parcelles_graphiques", grid, "RPG",
-                         cql="code_group IN ('17','18','19')")
+    # all declared parcels: grassland types plus ploughed land, so arable fields the
+    # satellite mistakes for grass (young cereals) can be excluded
+    feats = wfs_features("RPG.LATEST:parcelles_graphiques", grid, "RPG")
     raster = _rasterise_features(feats, grid, classify_pasture, "RPG")
     out = {"pa_" + name: block_mean((raster == i + 1).astype(np.float32), SUB).astype(np.float16)
            for i, name in enumerate(PASTURE_TYPES)}
-    log.info("pasture types: " + ", ".join(f"{k[3:]} {float(v.mean()) * 100:.1f}%" for k, v in out.items()))
+    out["pa_tilled"] = block_mean((raster == 4).astype(np.float32), SUB).astype(np.float16)
+    log.info("parcel types: " + ", ".join(f"{k[3:]} {float(v.mean()) * 100:.1f}%" for k, v in out.items()))
     return out
 
 
@@ -345,7 +353,7 @@ GROUPS = {
     "lc": (1, lambda r, g, w: {"lc_" + k: v for k, v in landcover(r["bbox"], g).items()}),
     "ph": (2, build_ph),
     "bdforet": (1, lambda r, g, w: bdforet(g)),
-    "rpg": (1, lambda r, g, w: rpg(g)),
+    "rpg": (2, lambda r, g, w: rpg(g)),
 }
 FRANCE_ONLY = {"bdforet", "rpg"}
 

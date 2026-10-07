@@ -37,9 +37,9 @@ def fake_groups():
     def rpg(r, g, w):
         grass = lc(r, g, w)["lc_grass"].astype(np.float32)
         return {"pa_permanent": (grass * 0.6).astype(np.float16), "pa_rough": np.zeros_like(grass, np.float16),
-                "pa_temporary": (grass * 0.3).astype(np.float16)}
+                "pa_temporary": (grass * 0.3).astype(np.float16), "pa_tilled": (grass * 0.05).astype(np.float16)}
 
-    return {"dem": (1, dem), "lc": (1, lc), "ph": (2, ph), "bdforet": (1, bdf), "rpg": (1, rpg)}
+    return {"dem": (1, dem), "lc": (1, lc), "ph": (2, ph), "bdforet": (1, bdf), "rpg": (2, rpg)}
 
 
 def fake_fetch(bbox, spacing, tz, batch=25, past_days=31):

@@ -47,7 +47,10 @@ def host_score(sp, layers, shape):
         pa = {k: layers["pa_" + k].astype(np.float32) for k in PASTURE_TYPES}
         registered = sum(pa.values())
         host = sum(pw[k] * pa[k] for k in PASTURE_TYPES)
-        host += pw.get("other", 0.5) * np.clip(open_ - registered, 0, 1)  # commons, verges, paddocks
+        tilled = layers["pa_tilled"].astype(np.float32) if "pa_tilled" in layers else 0.0
+        # grass the satellite sees but no parcel declares: commons, verges, paddocks.
+        # Declared ploughed/cultivated land is removed even if it looks green.
+        host += pw.get("other", 0.5) * np.clip(open_ - registered - tilled, 0, 1)
         return np.clip(host, 0, 1)
     weights = hab["host"]
     unknown_w = hab.get("unknown_forest", 0.5)
