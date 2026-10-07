@@ -15,13 +15,14 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import yaml
 
-from . import alerts, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
+from . import archive, alerts, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
 from .grid import Grid, downsample, upsample
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GOOD = 0.4          # score counted as "good" in stats and alerts
 HALF = 2            # weather is modelled at half resolution then smoothed up
 GBIF_MAX_AGE_DAYS = 7
+ARCHIVE_DIR = os.environ.get("WEATHER_ARCHIVE", os.path.join(ROOT, "archive"))
 
 
 def load_yaml(name):
@@ -33,19 +34,6 @@ def site_url():
     repo = os.environ.get("GITHUB_REPOSITORY", "rkmvzm9nmd-cpu/mushroom-forecast")
     owner, name = repo.split("/")
     return f"https://{owner.lower()}.github.io/{name}/"
-
-
-def load_static(region, grid, cache_dir):
-    path = os.path.join(cache_dir, f"{region['id']}.npz")
-    if os.path.exists(path):
-        with np.load(path) as z:
-            layers = {k: z[k] for k in z.files}
-        if layers.get("elev") is not None and layers["elev"].shape == grid.shape:
-            log.info(f"{region['id']}: static layers from cache ({len(layers)} layers)")
-            return layers
-        log.warn("cached static layers have the wrong shape; rebuilding")
-    log.info(f"{region['id']}: building static layers (first run or config change)")
-    return static_layers.build(region, grid, path, cache_dir)
 
 
 def load_sightings(region, species, cache_dir):
@@ -74,7 +62,7 @@ def process_region(region, species, out_dir, cache_dir):
     for sub in ("habitat", "score", "wx", "rain"):
         os.makedirs(os.path.join(rdir, sub), exist_ok=True)
 
-    layers = load_static(region, grid, cache_dir)
+    layers = static_layers.load_all(region, grid, cache_dir)
     terr = hab_mod.terrain(layers["elev"], grid)
     H = {}
     for sp in species:
@@ -96,12 +84,22 @@ def process_region(region, species, out_dir, cache_dir):
     dates, scores, weather_ok = [], {}, False
     lon, lat = grid.cell_lonlat()
     try:
-        wx = weather.fetch(region["bbox"], region.get("weather_spacing", 0.1), tz)
+        spacing = region.get("weather_spacing", 0.1)
+        lats_, lons_ = weather.lattice(region["bbox"], spacing)
+        held = archive.days_held(ARCHIVE_DIR, rid, lats_, lons_)
+        past = weather.PAST_DAYS if held >= 60 else archive.SEED_DAYS  # seed a new archive
+        if past != weather.PAST_DAYS:
+            log.info(f"weather archive has {held} days; seeding with {past} days from Open-Meteo")
+        wx = weather.fetch(region["bbox"], spacing, tz, past_days=past)
+        try:
+            archive.update(ARCHIVE_DIR, rid, wx, today)
+        except Exception as exc:
+            log.error("weather archive update failed", exc)
         hlon, hlat = downsample(lon, HALF), downsample(lat, HALF)
         helev = downsample(layers["elev"], HALF)
         P, Tmin, Tmax = weather.to_grid(wx, hlon, hlat, helev)
         all_dates = wx["dates"]
-        t0 = all_dates.index(today) if today in all_dates else weather.PAST_DAYS
+        t0 = all_dates.index(today) if today in all_dates else past
         day_idx = list(range(t0, len(all_dates)))
         dates = [all_dates[t] for t in day_idx]
         dry = scoring.dry_run_length(P)
@@ -139,7 +137,9 @@ def process_region(region, species, out_dir, cache_dir):
         "places": region.get("places", []), "good_threshold": GOOD,
         "stats": stats, "hotspots": spots, "validation": validation,
         "sources": {"bdforet": all(("ft_" + k) in layers for k in static_layers.FOREST_TYPES),
+                    "rpg": all(("pa_" + k) in layers for k in static_layers.PASTURE_TYPES),
                     "soil_ph": bool(np.isfinite(layers.get("ph", np.array([np.nan]))).any()),
+                    "soil_ph_france": bool(layers.get("ph_src_fr", np.array([False])).any()),
                     "landcover": "lc_grass" in layers},
     }
     with open(os.path.join(rdir, "meta.json"), "w") as f:

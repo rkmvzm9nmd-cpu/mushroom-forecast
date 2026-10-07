@@ -5,7 +5,7 @@ import numpy as np
 from scipy.ndimage import uniform_filter
 
 from .grid import Grid
-from .static_layers import FOREST_TYPES
+from .static_layers import FOREST_TYPES, PASTURE_TYPES
 
 
 def trapezoid(x, a, b, c, d):
@@ -39,7 +39,16 @@ def host_score(sp, layers, shape):
         grass = layers.get("lc_grass")
         if grass is None:
             return np.full(shape, 0.3, np.float32)
-        return np.clip(grass.astype(np.float32) + 0.4 * layers["lc_shrub"].astype(np.float32), 0, 1)
+        open_ = np.clip(grass.astype(np.float32) + 0.4 * layers["lc_shrub"].astype(np.float32), 0, 1)
+        pw = hab.get("pasture")
+        if not pw or not all(("pa_" + k) in layers for k in PASTURE_TYPES):
+            return open_
+        # France: farm-parcel register says which grass is old pasture vs re-sown
+        pa = {k: layers["pa_" + k].astype(np.float32) for k in PASTURE_TYPES}
+        registered = sum(pa.values())
+        host = sum(pw[k] * pa[k] for k in PASTURE_TYPES)
+        host += pw.get("other", 0.5) * np.clip(open_ - registered, 0, 1)  # commons, verges, paddocks
+        return np.clip(host, 0, 1)
     weights = hab["host"]
     unknown_w = hab.get("unknown_forest", 0.5)
     tree = layers.get("lc_tree")

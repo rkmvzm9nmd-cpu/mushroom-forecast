@@ -169,100 +169,227 @@ def classify_forest(essence, tfv):
     return 0
 
 
-def bdforet(grid: Grid):
-    """Rasterise IGN BD Foret V2 polygons into forest-type fractions."""
-    from rasterio.features import rasterize
-
-    fine = grid.finer(SUB)
-    minx, miny, maxx, maxy = grid.bounds_3857
+def wfs_features(layer, grid: Grid, label, cql=None, page=5000, step=40000.0):
+    """Yield GeoJSON features (EPSG:3857) from the Geoplateforme WFS over the grid,
+    in 40 km tiles with paging. If a CQL filter is given but rejected, falls back
+    to a plain bbox query (filter then has to be applied by the caller)."""
     url = "https://data.geopf.fr/wfs/ows"
-    layer = "LANDCOVER.FORESTINVENTORY.V2:formation_vegetale"
-    raster = np.zeros(fine.shape, dtype=np.uint8)
-    step = 40000.0  # 40 km query tiles
-    n_feat, seen_ess = 0, {}
-    xs = np.arange(minx, maxx, step)
-    ys = np.arange(miny, maxy, step)
-    t0 = time.time()
-    for x in xs:
-        for y in ys:
+    minx, miny, maxx, maxy = grid.bounds_3857
+    use_cql = cql is not None
+    for x in np.arange(minx, maxx, step):
+        for y in np.arange(miny, maxy, step):
             bb = (x, y, min(x + step, maxx), min(y + step, maxy))
             start = 0
             while True:
-                params = {
-                    "SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature",
-                    "TYPENAMES": layer, "OUTPUTFORMAT": "application/json",
-                    "SRSNAME": "EPSG:3857", "BBOX": f"{bb[0]},{bb[1]},{bb[2]},{bb[3]},EPSG:3857",
-                    "COUNT": 5000, "STARTINDEX": start,
-                }
+                params = {"SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature",
+                          "TYPENAMES": layer, "OUTPUTFORMAT": "application/json",
+                          "SRSNAME": "EPSG:3857", "COUNT": page, "STARTINDEX": start}
+                bbox_txt = f"{bb[0]},{bb[1]},{bb[2]},{bb[3]}"
+                if use_cql:
+                    params["CQL_FILTER"] = f"BBOX(geom,{bbox_txt},'EPSG:3857') AND ({cql})"
+                else:
+                    params["BBOX"] = bbox_txt + ",EPSG:3857"
                 data = None
                 for attempt in range(4):
                     try:
                         r = requests.get(url, params=params, headers=UA, timeout=240)
+                        if r.status_code == 400 and use_cql:
+                            log.warn(f"{label}: server rejected filter ({r.text[:150]}); using plain bbox")
+                            use_cql = False
+                            break
                         r.raise_for_status()
                         data = r.json()
                         break
                     except Exception as exc:
                         if attempt == 3:
-                            log.warn(f"BD Foret tile skipped: {exc.__class__.__name__}: {str(exc)[:200]}")
+                            log.warn(f"{label} tile skipped: {exc.__class__.__name__}: {str(exc)[:200]}")
                         else:
                             time.sleep(5 * (attempt + 1))
                 if data is None:
+                    if not use_cql and "CQL_FILTER" in params:
+                        continue  # retry this tile without the filter
                     break
                 feats = data.get("features", [])
-                shapes = []
-                for f in feats:
-                    p = f.get("properties") or {}
-                    cat = classify_forest(p.get("essence"), p.get("tfv"))
-                    ess = p.get("essence") or p.get("tfv") or "?"
-                    seen_ess[ess] = seen_ess.get(ess, 0) + 1
-                    if cat and f.get("geometry"):
-                        shapes.append((f["geometry"], cat))
-                if shapes:
-                    _burn(raster, shapes, fine.transform, rasterize)
-                n_feat += len(feats)
-                if len(feats) < 5000:
+                yield from feats
+                if len(feats) < page:
                     break
-                start += 5000
-    if n_feat == 0:
-        raise RuntimeError("no BD Foret polygons returned")
-    out = {name: block_mean((raster == i + 1).astype(np.float32), SUB).astype(np.float16)
-           for i, name in enumerate(FOREST_TYPES)}
-    top = sorted(seen_ess.items(), key=lambda kv: -kv[1])[:25]
-    log.info(f"BD Foret: {n_feat} polygons in {time.time() - t0:.0f}s; essences: "
-             + "; ".join(f"{k} ({v})" for k, v in top))
-    log.info("forest types: " + ", ".join(f"{k} {float(v.mean()) * 100:.1f}%" for k, v in out.items()))
-    return out
+                start += page
 
 
-def _burn(raster, shapes, transform, rasterize):
+def _burn(raster, shapes, transform):
+    from rasterio.features import rasterize
     burned = rasterize(shapes, out_shape=raster.shape, transform=transform, fill=0, dtype=np.uint8)
     np.copyto(raster, burned, where=burned > 0)
 
 
-# --------------------------------------------------------------------------- build all
-def build(region, grid: Grid, cache_path, workdir):
-    bbox = region["bbox"]
-    layers = {}
-    try:
-        layers["elev"] = elevation(bbox, grid)
-    except Exception as exc:
-        log.error("elevation failed", exc)
-        layers["elev"] = np.full(grid.shape, np.nan, np.float32)
-    try:
-        for k, v in landcover(bbox, grid).items():
-            layers["lc_" + k] = v
-    except Exception as exc:
-        log.error("landcover failed", exc)
-    try:
-        layers["ph"] = soil_ph(bbox, grid, workdir)
-    except Exception as exc:
-        log.error("soil pH failed", exc)
-    if region.get("bdforet"):
+def _rasterise_features(feats, grid: Grid, classify, label):
+    fine = grid.finer(SUB)
+    raster = np.zeros(fine.shape, dtype=np.uint8)
+    seen, shapes, n = {}, [], 0
+    t0 = time.time()
+    for f in feats:
+        n += 1
+        p = f.get("properties") or {}
+        cat, key = classify(p)
+        seen[key] = seen.get(key, 0) + 1
+        if cat and f.get("geometry"):
+            shapes.append((f["geometry"], cat))
+        if len(shapes) >= 5000:
+            _burn(raster, shapes, fine.transform)
+            shapes = []
+    if shapes:
+        _burn(raster, shapes, fine.transform)
+    if n == 0:
+        raise RuntimeError(f"no {label} polygons returned")
+    top = sorted(seen.items(), key=lambda kv: -kv[1])[:25]
+    log.info(f"{label}: {n} polygons in {time.time() - t0:.0f}s; classes: "
+             + "; ".join(f"{k} ({v})" for k, v in top))
+    return raster
+
+
+def bdforet(grid: Grid):
+    """IGN BD Foret V2 polygons -> forest-type fractions."""
+    feats = wfs_features("LANDCOVER.FORESTINVENTORY.V2:formation_vegetale", grid, "BD Foret")
+    raster = _rasterise_features(
+        feats, grid, lambda p: (classify_forest(p.get("essence"), p.get("tfv")),
+                                p.get("essence") or p.get("tfv") or "?"), "BD Foret")
+    out = {"ft_" + name: block_mean((raster == i + 1).astype(np.float32), SUB).astype(np.float16)
+           for i, name in enumerate(FOREST_TYPES)}
+    log.info("forest types: " + ", ".join(f"{k[3:]} {float(v.mean()) * 100:.1f}%" for k, v in out.items()))
+    return out
+
+
+# --------------------------------------------------------------------------- grassland (France: RPG)
+PASTURE_TYPES = ["permanent", "rough", "temporary"]
+
+
+def classify_pasture(p):
+    """RPG declared parcel -> 1 permanent pasture, 2 rough grazing / summer pasture,
+    3 temporary grassland, 0 other crops."""
+    group = str(p.get("code_group") or "")
+    code = str(p.get("code_cultu") or "").upper()
+    if code in ("PPH", "SPH") or group == "18":
+        return 1, f"permanent ({code})"
+    if code in ("SPL", "BOP") or group == "17":
+        return 2, f"rough/estive ({code})"
+    if group == "19" or code in ("PTR", "PRL"):
+        return 3, f"temporary ({code})"
+    return 0, f"other group {group}"
+
+
+def rpg(grid: Grid):
+    feats = wfs_features("RPG.LATEST:parcelles_graphiques", grid, "RPG",
+                         cql="code_group IN ('17','18','19')")
+    raster = _rasterise_features(feats, grid, classify_pasture, "RPG")
+    out = {"pa_" + name: block_mean((raster == i + 1).astype(np.float32), SUB).astype(np.float16)
+           for i, name in enumerate(PASTURE_TYPES)}
+    log.info("pasture types: " + ", ".join(f"{k[3:]} {float(v.mean()) * 100:.1f}%" for k, v in out.items()))
+    return out
+
+
+# --------------------------------------------------------------------------- French soil pH (GIS Sol / INRAE)
+GSN_DOI = "doi:10.57745/3QFT2T"   # French maps for the Global Soil Nutrient map (pH, 250 m, Etalab 2.0)
+
+
+def french_ph(grid: Grid, workdir):
+    from rasterio.enums import Resampling
+    base = "https://entrepot.recherche.data.gouv.fr"
+    r = requests.get(f"{base}/api/datasets/:persistentId/versions/:latest/files",
+                     params={"persistentId": GSN_DOI}, headers=UA, timeout=60)
+    r.raise_for_status()
+    files = [(f["dataFile"]["filename"], f["dataFile"]["id"]) for f in r.json()["data"]]
+    log.info("French soil maps available: " + ", ".join(n for n, _ in files))
+
+    def is_ph(n):
+        n = n.lower()
+        return "ph" in n and n.endswith((".tif", ".tiff")) and not any(
+            t in n for t in ("sd", "std", "unc", "_q05", "_q95", "kcl"))
+    cands = [f for f in files if is_ph(f[0])]
+    if not cands:
+        raise RuntimeError("no pH file found in dataset")
+    name, fid = cands[0]
+    path = os.path.join(workdir, "fr_ph.tif")
+    with requests.get(f"{base}/api/access/datafile/{fid}", headers=UA, timeout=600, stream=True) as d:
+        d.raise_for_status()
+        with open(path, "wb") as f:
+            for chunk in d.iter_content(1 << 20):
+                f.write(chunk)
+    ph, _ = _reproject_tiles([path], grid, Resampling.bilinear, np.float32, -9999.0)
+    ph[(ph <= 0) | (ph > 140)] = np.nan
+    if np.nanmedian(ph) > 14:
+        ph = ph / 10.0
+    log.info(f"French pH map ({name}): covers {np.isfinite(ph).mean() * 100:.0f}% of grid, "
+             f"range {np.nanmin(ph):.1f}-{np.nanmax(ph):.1f}")
+    return ph
+
+
+def build_ph(region, grid, workdir):
+    soil = soil_ph(region["bbox"], grid, workdir)  # SoilGrids, worldwide
+    if region.get("country") == "FR":
         try:
-            for k, v in bdforet(grid).items():
-                layers["ft_" + k] = v
+            fr = french_ph(grid, workdir)
+            both = np.isfinite(fr) & np.isfinite(soil)
+            if both.any():
+                log.info(f"pH France vs SoilGrids: mean {np.nanmean(fr[both]):.2f} vs {np.nanmean(soil[both]):.2f}, "
+                         f"correlation {np.corrcoef(fr[both], soil[both])[0, 1]:.2f}")
+            return {"ph": np.where(np.isfinite(fr), fr, soil).astype(np.float32), "ph_src_fr": np.isfinite(fr)}
         except Exception as exc:
-            log.error("BD Foret failed (falling back to generic forest)", exc)
-    np.savez_compressed(cache_path, **layers)
-    log.info(f"static layers cached: {sorted(layers)}")
+            log.warn(f"French pH map unavailable, using SoilGrids: {exc.__class__.__name__}: {str(exc)[:200]}")
+    return {"ph": soil}
+
+
+# --------------------------------------------------------------------------- cached groups
+# Bump a version to rebuild just that group on the next run.
+GROUPS = {
+    "dem": (1, lambda r, g, w: {"elev": elevation(r["bbox"], g)}),
+    "lc": (1, lambda r, g, w: {"lc_" + k: v for k, v in landcover(r["bbox"], g).items()}),
+    "ph": (2, build_ph),
+    "bdforet": (1, lambda r, g, w: bdforet(g)),
+    "rpg": (1, lambda r, g, w: rpg(g)),
+}
+FRANCE_ONLY = {"bdforet", "rpg"}
+
+
+def _migrate_v1(region, cache_dir, rdir):
+    """Split the original single-file cache into per-group files (saves refetching)."""
+    old = os.path.join(cache_dir, f"{region['id']}.npz")
+    if not os.path.exists(old):
+        return
+    with np.load(old) as z:
+        layers = {k: z[k] for k in z.files}
+    shape = layers["elev"].shape
+    split = {"dem": ["elev"], "lc": [k for k in layers if k.startswith("lc_")],
+             "bdforet": [k for k in layers if k.startswith("ft_")]}
+    for g, keys in split.items():
+        if keys and not os.path.exists(os.path.join(rdir, g + ".npz")):
+            np.savez_compressed(os.path.join(rdir, g + ".npz"), _v=GROUPS[g][0], _shape=shape,
+                                **{k: layers[k] for k in keys})
+    os.remove(old)
+    log.info("static cache migrated to per-layer files")
+
+
+def load_all(region, grid: Grid, cache_dir):
+    rdir = os.path.join(cache_dir, region["id"])
+    os.makedirs(rdir, exist_ok=True)
+    _migrate_v1(region, cache_dir, rdir)
+    layers = {}
+    france = region.get("country") == "FR"
+    for g, (ver, fn) in GROUPS.items():
+        if g in FRANCE_ONLY and not france:
+            continue
+        path = os.path.join(rdir, g + ".npz")
+        if os.path.exists(path):
+            with np.load(path) as z:
+                if int(z["_v"]) == ver and tuple(z["_shape"]) == grid.shape:
+                    layers.update({k: z[k] for k in z.files if not k.startswith("_")})
+                    continue
+        log.info(f"{region['id']}: building layer group '{g}'")
+        try:
+            got = fn(region, grid, rdir)
+            np.savez_compressed(path, _v=ver, _shape=grid.shape, **got)
+            layers.update(got)
+        except Exception as exc:
+            log.error(f"layer group '{g}' failed (will retry next run)", exc)
+    if "elev" not in layers:
+        layers["elev"] = np.full(grid.shape, np.nan, np.float32)
     return layers

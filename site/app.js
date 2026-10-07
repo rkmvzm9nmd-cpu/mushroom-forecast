@@ -11,7 +11,7 @@
   const S = {
     index: null, meta: null, species: store.get("mf_species", "psilocybe"),
     day: 0, mode: "score", opacity: store.get("mf_opacity", 0.75), base: store.get("mf_base", "topo"),
-    overlays: store.get("mf_overlays", { sightings: false, forest: false, parcels: false, geology: false, places: true }),
+    overlays: store.get("mf_overlays", { sightings: false, forest: false, parcels: false, trails: false, geology: false, places: true }),
     spots: store.get("mf_spots", []), sightings: null, locating: false,
   };
 
@@ -152,6 +152,7 @@
   const OVERLAYS = {
     forest: { name: "Tree species map (IGN BD Forêt)", layer: L.tileLayer(ign("LANDCOVER.FORESTINVENTORY.V2", "image/png"), { maxZoom: 19, opacity: 0.6, attribution: IGN_ATTR }) },
     parcels: { name: "Farm parcels (IGN RPG)", layer: L.tileLayer(ign("LANDUSE.AGRICULTURE.LATEST", "image/png"), { maxZoom: 19, opacity: 0.6, attribution: IGN_ATTR }) },
+    trails: { name: "Hiking routes (Waymarked Trails / OSM)", layer: L.tileLayer("https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png", { maxZoom: 18, opacity: 0.9, attribution: '<a href="https://hiking.waymarkedtrails.org">Waymarked Trails</a>' }) },
     geology: { name: "Geology 1:50k (BRGM)", layer: L.tileLayer.wms("https://geoservices.brgm.fr/geologie", { layers: "SCAN_H_GEOL50", format: "image/png", transparent: true, opacity: 0.55, attribution: "BRGM" }) },
   };
   let baseLayer = null;
@@ -275,10 +276,10 @@
       <h3>Look-alikes</h3><p>${esc(s.lookalikes)}</p>
       <h3>Model check</h3><p>Habitat map ranks real recorded finds above random ground: <b>${auc}</b>.</p>
       <h3>How to read the map</h3>
-      <p class="note"><b>Likelihood</b> = habitat × recent weather. <b>Habitat</b> = trees or grassland, soil acidity, altitude and damp ground.
+      <p class="note"><b>Likelihood</b> = habitat × recent weather. <b>Habitat</b> = tree species or pasture type (old pasture vs re-sown), soil acidity, altitude and damp ground.
       <b>Weather</b> = rain in the right window before the date, temperature and frost. Colours show odds, not certainty.</p>
       <p class="warn">Never eat a mushroom on the strength of this map. Get every find checked by an expert (French pharmacists and local mycological societies do this for free). Check local picking limits and ask before entering farmland.</p>
-      <p class="note">Data: Open-Meteo, IGN BD Forêt, ESA WorldCover, Copernicus DEM, ISRIC SoilGrids, GBIF. <a href="data/status.json" style="color:inherit">Build log</a>.</p>`);
+      <p class="note">Data: Open-Meteo, IGN BD Forêt & RPG farm parcels, ESA WorldCover, Copernicus DEM, INRAE/GIS Sol & ISRIC SoilGrids soil pH, GBIF. <a href="data/status.json" style="color:inherit">Build log</a>.</p>`);
   }
   $("infoBtn").onclick = showInfo;
 

@@ -24,12 +24,12 @@ def lattice(bbox, spacing):
     return lats, lons
 
 
-def _get_batch(chunk, timezone):
+def _get_batch(chunk, timezone, past_days=PAST_DAYS):
     params = {
         "latitude": ",".join(f"{p[0]:.4f}" for p in chunk),
         "longitude": ",".join(f"{p[1]:.4f}" for p in chunk),
         "daily": ",".join(VARS),
-        "past_days": PAST_DAYS, "forecast_days": FORECAST_DAYS,
+        "past_days": past_days, "forecast_days": FORECAST_DAYS,
         "timezone": timezone,
     }
     for attempt in range(6):
@@ -47,18 +47,19 @@ def _get_batch(chunk, timezone):
     return None
 
 
-def fetch(bbox, spacing, timezone, batch=25):
+def fetch(bbox, spacing, timezone, batch=25, past_days=PAST_DAYS):
     lats, lons = lattice(bbox, spacing)
     ny, nx = len(lats), len(lons)
     pts = [(la, lo) for la in lats for lo in lons]
     results = [None] * len(pts)
     for i in range(0, len(pts), batch):
-        got = _get_batch(pts[i:i + batch], timezone)
+        got = _get_batch(pts[i:i + batch], timezone, past_days)
         if got is None:
             log.warn(f"open-meteo: batch {i // batch + 1} failed; filling from neighbours")
         else:
             results[i:i + len(got)] = got
-        time.sleep(3)  # stay well under the free per-minute limit
+        # stay under the free per-minute limit (long look-backs count as several calls)
+        time.sleep(3 if past_days <= PAST_DAYS else 20)
     ok = [k for k, r in enumerate(results) if r is not None]
     if len(ok) < 0.7 * len(pts):
         raise RuntimeError(f"open-meteo: only {len(ok)}/{len(pts)} points fetched")

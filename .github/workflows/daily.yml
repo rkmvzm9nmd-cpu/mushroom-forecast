@@ -8,7 +8,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write   # to save the rolling weather archive branch
   pages: write
   id-token: write
 
@@ -35,15 +35,37 @@ jobs:
         uses: actions/cache@v4
         with:
           path: cache/static
-          key: static-v1-${{ hashFiles('pipeline/static_layers.py', 'pipeline/grid.py', 'config/regions.yaml') }}-${{ github.run_id }}
+          # each layer group carries its own version, so always restore the newest cache
+          key: static-v2-${{ github.run_id }}
           restore-keys: |
-            static-v1-${{ hashFiles('pipeline/static_layers.py', 'pipeline/grid.py', 'config/regions.yaml') }}-
+            static-v2-
+            static-v1-
+
+      - name: Restore weather archive
+        run: |
+          mkdir -p archive
+          if git fetch --depth=1 origin weather-archive 2>/dev/null; then
+            git archive FETCH_HEAD | tar -x -C archive
+          fi
+          ls -la archive
 
       - name: Build forecast
         env:
           SPOTS_JSON: ${{ secrets.SPOTS_JSON }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          WEATHER_ARCHIVE: archive
         run: python -m pipeline.run --out build/site --cache cache/static
+
+      - name: Save weather archive
+        if: success()
+        run: |
+          cd archive
+          [ -n "$(ls -A)" ] || exit 0
+          git init -q -b weather-archive
+          git add -A
+          git -c user.name="forecast-bot" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "Weather archive $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" weather-archive
 
       - name: Upload site
         if: always()
