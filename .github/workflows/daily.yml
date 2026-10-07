@@ -53,6 +53,8 @@ jobs:
         env:
           SPOTS_JSON: ${{ secrets.SPOTS_JSON }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          CDSE_S3_KEY: ${{ secrets.CDSE_S3_KEY }}
+          CDSE_S3_SECRET: ${{ secrets.CDSE_S3_SECRET }}
           WEATHER_ARCHIVE: archive
         run: python -m pipeline.run --out build/site --cache cache/static
 

@@ -1,7 +1,9 @@
 # Each region is modelled on its own Web-Mercator pixel grid.
 # To add a region (e.g. Romania), copy a block, change id/name/bbox/timezone,
 # and set country (FR enables the French-only layers: IGN tree species, farm
-# parcels and the French soil pH map; elsewhere Europe-wide data is used).
+# parcels and the French soil pH map; elsewhere Europe-wide data is used, including
+# the ForestPaths 10 m tree-genus map). The Copernicus ploughing indicator is used
+# everywhere when CDSE_S3_KEY / CDSE_S3_SECRET secrets are set.
 regions:
   - id: massif-central-alps
     name: "Lozère to Isère"
@@ -15,3 +17,16 @@ regions:
       - {name: "Saint-Agrève", lat: 45.010, lon: 4.400}
       - {name: "Pilat (Le Bessat)", lat: 45.360, lon: 4.530}
       - {name: "Matheysine (La Mure)", lat: 44.950, lon: 5.800}
+
+  - id: brasov-fagaras
+    name: "Brașov & Făgăraș"
+    bbox: [24.4, 45.3, 26.0, 46.1]
+    zoom: 10
+    timezone: Europe/Bucharest
+    country: RO                       # Europe-wide layers incl. 10 m tree-genus map
+    weather_spacing: 0.1
+    places:
+      - {name: "Brașov", lat: 45.6427, lon: 25.5887}
+      - {name: "Viștea / Viștișoara", lat: 45.8208, lon: 24.7706}
+      - {name: "Poiana Brașov", lat: 45.5940, lon: 25.5520}
+      - {name: "Zărnești", lat: 45.5640, lon: 25.3180}

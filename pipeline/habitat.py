@@ -36,32 +36,53 @@ def terrain(elev, grid: Grid):
 def host_score(sp, layers, shape):
     hab = sp["habitat"]
     if hab["host"] == "grass":
-        grass = layers.get("lc_grass")
-        if grass is None:
-            return np.full(shape, 0.3, np.float32)
-        open_ = np.clip(grass.astype(np.float32) + 0.4 * layers["lc_shrub"].astype(np.float32), 0, 1)
-        pw = hab.get("pasture")
-        if not pw or not all(("pa_" + k) in layers for k in PASTURE_TYPES):
-            return open_
-        # France: farm-parcel register says which grass is old pasture vs re-sown
-        pa = {k: layers["pa_" + k].astype(np.float32) for k in PASTURE_TYPES}
-        registered = sum(pa.values())
-        long_term = pa["permanent"] + pa["rough"]
-        lt_factor = 1.0
-        if "pa_hist_perm" in layers:
-            # permanent today but not in the oldest register -> possibly ploughed within ~10 years
-            old = layers["pa_hist_perm"].astype(np.float32)
-            recent = np.clip(long_term - old, 0, None) / np.maximum(long_term, 1e-6)
-            lt_factor = 1.0 - (1.0 - pw.get("recent_permanent", 1.0)) * recent
-        host = lt_factor * (pw["permanent"] * pa["permanent"] + pw["rough"] * pa["rough"])
-        host = host + pw["temporary"] * pa["temporary"]
-        if "pa_organic" in layers:  # organic farms: no synthetic fertiliser
-            host = host * (1.0 + pw.get("organic_bonus", 0.0) * layers["pa_organic"].astype(np.float32))
-        tilled = layers["pa_tilled"].astype(np.float32) if "pa_tilled" in layers else 0.0
-        # grass the satellite sees but no parcel declares: commons, verges, paddocks.
-        # Declared ploughed/cultivated land is removed even if it looks green.
-        host += pw.get("other", 0.5) * np.clip(open_ - registered - tilled, 0, 1)
-        return np.clip(host, 0, 1)
+        return np.clip(_grass_host(hab, layers, shape) * _plough_factor(hab, layers), 0, 1)
+    return _forest_host(hab, layers, shape)
+
+
+def _plough_factor(hab, layers):
+    """Copernicus ploughing indicator (Europe-wide): grassland ploughed in the last
+    0-2 years, or 3-6 years, or whose cover changed, keeps only part of its score."""
+    pk = hab.get("ploughed")
+    if not pk or "pl_recent" not in layers:
+        return 1.0
+    f = 1.0
+    f = f - (1 - pk.get("recent", 1.0)) * layers["pl_recent"].astype(np.float32)
+    f = f - (1 - pk.get("mid", 1.0)) * layers["pl_mid"].astype(np.float32)
+    f = f - (1 - pk.get("changed", 1.0)) * layers["pl_changed"].astype(np.float32)
+    return np.clip(f, 0, 1)
+
+
+def _grass_host(hab, layers, shape):
+    grass = layers.get("lc_grass")
+    if grass is None:
+        return np.full(shape, 0.3, np.float32)
+    open_ = np.clip(grass.astype(np.float32) + 0.4 * layers["lc_shrub"].astype(np.float32), 0, 1)
+    pw = hab.get("pasture")
+    if not pw or not all(("pa_" + k) in layers for k in PASTURE_TYPES):
+        return open_
+    # France: farm-parcel register says which grass is old pasture vs re-sown
+    pa = {k: layers["pa_" + k].astype(np.float32) for k in PASTURE_TYPES}
+    registered = sum(pa.values())
+    long_term = pa["permanent"] + pa["rough"]
+    lt_factor = 1.0
+    if "pa_hist_perm" in layers:
+        # permanent today but not in the oldest register -> possibly ploughed within ~10 years
+        old = layers["pa_hist_perm"].astype(np.float32)
+        recent = np.clip(long_term - old, 0, None) / np.maximum(long_term, 1e-6)
+        lt_factor = 1.0 - (1.0 - pw.get("recent_permanent", 1.0)) * recent
+    host = lt_factor * (pw["permanent"] * pa["permanent"] + pw["rough"] * pa["rough"])
+    host = host + pw["temporary"] * pa["temporary"]
+    if "pa_organic" in layers:  # organic farms: no synthetic fertiliser
+        host = host * (1.0 + pw.get("organic_bonus", 0.0) * layers["pa_organic"].astype(np.float32))
+    tilled = layers["pa_tilled"].astype(np.float32) if "pa_tilled" in layers else 0.0
+    # grass the satellite sees but no parcel declares: commons, verges, paddocks.
+    # Declared ploughed/cultivated land is removed even if it looks green.
+    host += pw.get("other", 0.5) * np.clip(open_ - registered - tilled, 0, 1)
+    return np.clip(host, 0, 1)
+
+
+def _forest_host(hab, layers, shape):
     weights = hab["host"]
     unknown_w = hab.get("unknown_forest", 0.5)
     tree = layers.get("lc_tree")

@@ -443,7 +443,13 @@
       youMarker = L.marker(e.latlng, { icon: L.divIcon({ className: "", html: '<div class="you"></div>', iconSize: [16, 16] }), interactive: false }).addTo(map);
       youCircle = L.circle(e.latlng, { radius: e.accuracy, color: "#3d8bfd", weight: 1, fillOpacity: 0.08, interactive: false }).addTo(map);
     } else { youMarker.setLatLng(e.latlng); youCircle.setLatLng(e.latlng).setRadius(e.accuracy); }
-    if (firstFix) { map.setView(e.latlng, Math.max(map.getZoom(), 14)); firstFix = false; }
+    if (firstFix) {
+      firstFix = false;
+      // jump to the region you're standing in, if it isn't the one on screen
+      const here = S.index && S.index.regions.find((r) => e.latlng.lng >= r.bbox[0] && e.latlng.lat >= r.bbox[1] && e.latlng.lng <= r.bbox[2] && e.latlng.lat <= r.bbox[3]);
+      const go = () => map.setView(e.latlng, Math.max(map.getZoom(), 14));
+      if (here && S.meta && here.id !== S.meta.id) loadRegion(here.id, false).then(go); else go();
+    }
   });
   map.on("locationerror", (e) => { toast("Location unavailable"); S.locating = false; $("locBtn").classList.remove("on"); });
 
@@ -461,6 +467,13 @@
     const rb = L.latLngBounds(S.meta.grid.bounds);
     if (fit || !view || view.z < 7 || !rb.contains([view.lat, view.lng])) map.fitBounds(rb);
     else map.setView([view.lat, view.lng], view.z);
+    store.set("mf_region", id);
+    const sel = $("regionSel");
+    if (S.index.regions.length > 1) {
+      sel.innerHTML = S.index.regions.map((r) => `<option value="${esc(r.id)}" ${r.id === id ? "selected" : ""}>${esc(r.name)}</option>`).join("");
+      sel.hidden = false;
+      sel.onchange = () => loadRegion(sel.value, true);
+    }
     renderChips(); renderDays(); syncOverlays(); draw();
   }
   map.on("moveend", () => { if (!S.meta) return; const c = map.getCenter(); store.set("mf_view", { lat: c.lat, lng: c.lng, z: map.getZoom() }); });
@@ -471,9 +484,11 @@
     try {
       S.index = await (await fetch(`${DATA}index.json?t=${Date.now()}`)).json();
       if (!S.index.species.some((s) => s.id === S.species)) S.species = S.index.species[0].id;
-      const firstMeta = await (await fetch(`${DATA}${S.index.regions[0].id}/meta.json?t=${Date.now()}`)).json();
+      const saved = store.get("mf_region", null);
+      const start = S.index.regions.some((r) => r.id === saved) ? saved : S.index.regions[0].id;
+      const firstMeta = await (await fetch(`${DATA}${start}/meta.json?t=${Date.now()}`)).json();
       bust = "?v=" + encodeURIComponent(firstMeta.generated);
-      await loadRegion(S.index.regions[0].id, false);
+      await loadRegion(start, false);
     } catch (e) {
       map.setView([45, 4.5], 8);
       toast("Forecast data not built yet");

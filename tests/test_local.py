@@ -76,14 +76,23 @@ with tempfile.TemporaryDirectory() as tmp:
         d = orig(name)
         if name == "regions.yaml":
             d["regions"][0]["bbox"] = [3.6, 44.65, 3.9, 44.8]
+            d["regions"][1]["bbox"] = [24.7, 45.7, 24.9, 45.85]
         return d
     run.load_yaml = small
     for _ in range(2):
         sys.argv = ["run", "--out", os.path.join(tmp, "site"), "--cache", os.path.join(tmp, "cache")]
         run.main()
     meta = json.load(open(os.path.join(tmp, "site/data/massif-central-alps/meta.json")))
+    ro = json.load(open(os.path.join(tmp, "site/data/brasov-fagaras/meta.json")))
+    print("romania sources", ro["sources"], "dates", ro["dates"][:2])
+    import pipeline.habitat as H
+    lay = {"lc_grass": np.ones((2, 2), np.float16), "lc_shrub": np.zeros((2, 2), np.float16),
+           "pl_recent": np.array([[1, 0], [0, 0]], np.float16), "pl_mid": np.array([[0, 1], [0, 0]], np.float16),
+           "pl_changed": np.zeros((2, 2), np.float16)}
+    sp = [s_ for s_ in run.load_yaml("species.yaml")["species"] if s_["id"] == "psilocybe"][0]
+    print("plough effect (recent, mid / none):", H.host_score(sp, lay, (2, 2)).tolist())
     print("past_days requested per run:", calls)
     print("sources", meta["sources"])
     print("max scores", {k: v["max"][:4] for k, v in meta["stats"].items()})
-    assert meta["weather_ok"] and calls == [92, 31] and meta["sources"]["rpg"]
+    assert meta["weather_ok"] and calls == [92, 92, 31, 31] and meta["sources"]["rpg"]
 print("OK")

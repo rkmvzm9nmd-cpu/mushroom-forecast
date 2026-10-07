@@ -377,6 +377,98 @@ def build_ph(region, grid, workdir):
     return {"ph": soil}
 
 
+# --------------------------------------------------------------------------- tree genera (Europe, outside France)
+FP_RECORD = "13341104"   # ForestPaths European tree genus map 2020, 10 m, CC-BY 4.0
+# class codes: 0 Larix, 1 Picea, 2 Pinus, 3 Fagus, 4 Quercus, 5 other needleleaf, 6 other broadleaf, 7 no trees
+FP_TO_TYPE = {0: "sprucefir", 1: "sprucefir", 2: "pine", 3: "beech", 4: "oak", 5: "sprucefir", 6: "mixedbroad"}
+
+
+def forest_eu(grid: Grid, workdir):
+    import glob
+    import zipfile
+    import rasterio
+    from rasterio.enums import Resampling
+    from rasterio.warp import transform_bounds
+    fine = grid.finer(SUB)
+    l, b, r, t = transform_bounds("EPSG:3857", "EPSG:3035", *grid.bounds_3857)
+    cols = range(int(math.floor(l / 1e5)) * 100, int(math.ceil(r / 1e5)) * 100, 100)
+    tifs = []
+    for c in cols:
+        name = f"ulx_{c:04d}.zip"
+        zpath = os.path.join(workdir, name)
+        url = f"https://zenodo.org/records/{FP_RECORD}/files/{name}?download=1"
+        log.info(f"tree genera: downloading {name}")
+        with requests.get(url, headers=UA, timeout=1800, stream=True) as d:
+            d.raise_for_status()
+            with open(zpath, "wb") as f:
+                for chunk in d.iter_content(1 << 22):
+                    f.write(chunk)
+        out = os.path.join(workdir, f"fp_{c}")
+        with zipfile.ZipFile(zpath) as z:
+            z.extractall(out)
+        os.remove(zpath)
+        tifs += glob.glob(os.path.join(out, "**", "*.tif"), recursive=True)
+    keep = []
+    for p in tifs:  # only tiles that overlap the region
+        with rasterio.open(p) as src:
+            bl, bb, br, bt = src.bounds
+        if bl < r and br > l and bb < t and bt > b:
+            keep.append(p)
+    log.info(f"tree genera: {len(keep)} of {len(tifs)} tiles overlap the region")
+    if not keep:
+        raise RuntimeError("no tree-genus tiles overlap the region")
+    cls, _ = _reproject_tiles(keep, fine, Resampling.nearest, np.uint8, 255)
+    counts = {int(k): int(v) for k, v in zip(*np.unique(cls, return_counts=True))}
+    log.info(f"tree genera class counts: {counts}")
+    out = {"ft_" + k: np.zeros(grid.shape, np.float16) for k in FOREST_TYPES}
+    for code, ftype in FP_TO_TYPE.items():
+        out["ft_" + ftype] = (out["ft_" + ftype].astype(np.float32)
+                              + block_mean((cls == code).astype(np.float32), SUB)).astype(np.float16)
+    log.info("forest types: " + ", ".join(f"{k[3:]} {float(v.mean()) * 100:.1f}%" for k, v in out.items()))
+    return out
+
+
+# --------------------------------------------------------------------------- ploughing (Copernicus, Europe)
+PLOUGH_COLLECTION = "clms_vlcc_ploughing-indicator_europe_10m_yearly_v1"
+
+
+def plough(region, grid: Grid, workdir):
+    """Copernicus HRL grassland ploughing indicator: years since ploughing was last
+    detected inside permanent grassland (0-6), 100 = herbaceous cover changed,
+    253 = no ploughing information. Needs a free Copernicus Data Space account."""
+    import rasterio
+    from rasterio.enums import Resampling
+    key, secret = os.environ.get("CDSE_S3_KEY"), os.environ.get("CDSE_S3_SECRET")
+    if not (key and secret):
+        raise RuntimeError("CDSE_S3_KEY / CDSE_S3_SECRET not set (skipping ploughing layer)")
+    w, s, e, n = region["bbox"]
+    r = requests.post("https://stac.dataspace.copernicus.eu/v1/search", headers=UA, timeout=120,
+                      json={"collections": [PLOUGH_COLLECTION], "bbox": [w, s, e, n], "limit": 200})
+    r.raise_for_status()
+    items = r.json().get("features", [])
+    if not items:
+        raise RuntimeError("no ploughing-indicator tiles for this region")
+    latest = max(i["properties"].get("datetime", "") for i in items)
+    hrefs = [i["assets"]["data"]["href"] for i in items if i["properties"].get("datetime") == latest]
+    log.info(f"ploughing indicator: {len(hrefs)} tiles for {latest[:4]}")
+    fine = grid.finer(SUB)
+    paths = ["/vsis3/" + h[len("s3://"):] for h in hrefs]
+    with rasterio.Env(AWS_ACCESS_KEY_ID=key, AWS_SECRET_ACCESS_KEY=secret,
+                      AWS_S3_ENDPOINT="eodata.dataspace.copernicus.eu",
+                      AWS_VIRTUAL_HOSTING="FALSE", AWS_HTTPS="YES"):
+        v, used = _reproject_tiles(paths, fine, Resampling.nearest, np.uint8, 255)
+    if used == 0:
+        raise RuntimeError("could not read any ploughing tiles (check the S3 keys)")
+    counts = {int(k): int(c) for k, c in zip(*np.unique(v, return_counts=True))}
+    log.info(f"ploughing indicator value counts: {counts}")
+    return {
+        "pl_recent": block_mean((v <= 2).astype(np.float32), SUB).astype(np.float16),       # ploughed 0-2 yrs ago
+        "pl_mid": block_mean(((v >= 3) & (v <= 6)).astype(np.float32), SUB).astype(np.float16),
+        "pl_changed": block_mean((v == 100).astype(np.float32), SUB).astype(np.float16),
+        "pl_year": np.array(int(latest[:4])),
+    }
+
+
 # --------------------------------------------------------------------------- cached groups
 # Bump a version to rebuild just that group on the next run.
 GROUPS = {
@@ -386,8 +478,11 @@ GROUPS = {
     "bdforet": (1, lambda r, g, w: bdforet(g)),
     "rpg": (3, lambda r, g, w: rpg(g)),
     "rpg_hist": (1, lambda r, g, w: rpg_history(g)),
+    "forest_eu": (1, lambda r, g, w: forest_eu(g, w)),
+    "plough": (1, plough),
 }
 FRANCE_ONLY = {"bdforet", "rpg", "rpg_hist"}
+OUTSIDE_FRANCE = {"forest_eu"}
 
 
 def _migrate_v1(region, cache_dir, rdir):
@@ -415,7 +510,7 @@ def load_all(region, grid: Grid, cache_dir):
     layers = {}
     france = region.get("country") == "FR"
     for g, (ver, fn) in GROUPS.items():
-        if g in FRANCE_ONLY and not france:
+        if (g in FRANCE_ONLY and not france) or (g in OUTSIDE_FRANCE and france):
             continue
         path = os.path.join(rdir, g + ".npz")
         if os.path.exists(path):
@@ -429,7 +524,10 @@ def load_all(region, grid: Grid, cache_dir):
             np.savez_compressed(path, _v=ver, _shape=grid.shape, **got)
             layers.update(got)
         except Exception as exc:
-            log.error(f"layer group '{g}' failed (will retry next run)", exc)
+            if "not set" in str(exc):
+                log.info(f"layer group '{g}' skipped: {exc}")
+            else:
+                log.error(f"layer group '{g}' failed (will retry next run)", exc)
     if "elev" not in layers:
         layers["elev"] = np.full(grid.shape, np.nan, np.float32)
     return layers

@@ -129,3 +129,7 @@ textarea { width: 100%; min-height: 90px; background: #0f110c; color: var(--ink)
 @media (min-width: 760px) {
   .sheet { left: auto; right: 16px; bottom: 16px; width: 400px; border-radius: 18px; border: 1px solid var(--line); max-height: 80vh; }
 }
+
+.region { margin-left: auto; max-width: 52vw; background: rgba(255,255,255,0.06); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12.5px; }
+.region option { background: var(--panel-solid); color: var(--ink); }

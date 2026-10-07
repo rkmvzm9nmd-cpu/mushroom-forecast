@@ -136,7 +136,9 @@ def process_region(region, species, out_dir, cache_dir):
         "grid": grid.to_json(), "half": HALF, "dates": dates, "weather_ok": weather_ok,
         "places": region.get("places", []), "good_threshold": GOOD,
         "stats": stats, "hotspots": spots, "validation": validation,
-        "sources": {"bdforet": all(("ft_" + k) in layers for k in static_layers.FOREST_TYPES),
+        "sources": {"tree_species": (None if not all(("ft_" + k) in layers for k in static_layers.FOREST_TYPES)
+                                     else "IGN BD Foret" if region.get("country") == "FR" else "ForestPaths EU 10 m"),
+                    "ploughing_year": int(layers["pl_year"]) if "pl_year" in layers else None,
                     "rpg": all(("pa_" + k) in layers for k in static_layers.PASTURE_TYPES),
                     "soil_ph": bool(np.isfinite(layers.get("ph", np.array([np.nan]))).any()),
                     "soil_ph_france": bool(layers.get("ph_src_fr", np.array([False])).any()),
