@@ -46,7 +46,17 @@ def host_score(sp, layers, shape):
         # France: farm-parcel register says which grass is old pasture vs re-sown
         pa = {k: layers["pa_" + k].astype(np.float32) for k in PASTURE_TYPES}
         registered = sum(pa.values())
-        host = sum(pw[k] * pa[k] for k in PASTURE_TYPES)
+        long_term = pa["permanent"] + pa["rough"]
+        lt_factor = 1.0
+        if "pa_hist_perm" in layers:
+            # permanent today but not in the oldest register -> possibly ploughed within ~10 years
+            old = layers["pa_hist_perm"].astype(np.float32)
+            recent = np.clip(long_term - old, 0, None) / np.maximum(long_term, 1e-6)
+            lt_factor = 1.0 - (1.0 - pw.get("recent_permanent", 1.0)) * recent
+        host = lt_factor * (pw["permanent"] * pa["permanent"] + pw["rough"] * pa["rough"])
+        host = host + pw["temporary"] * pa["temporary"]
+        if "pa_organic" in layers:  # organic farms: no synthetic fertiliser
+            host = host * (1.0 + pw.get("organic_bonus", 0.0) * layers["pa_organic"].astype(np.float32))
         tilled = layers["pa_tilled"].astype(np.float32) if "pa_tilled" in layers else 0.0
         # grass the satellite sees but no parcel declares: commons, verges, paddocks.
         # Declared ploughed/cultivated land is removed even if it looks green.

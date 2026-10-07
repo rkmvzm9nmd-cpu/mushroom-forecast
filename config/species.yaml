@@ -2,7 +2,9 @@
 #
 # habitat.host      : "grass" (open grassland) or a dict of forest-type weights.
 # habitat.pasture   : (grass species, France) weights for permanent pasture, rough grazing /
-#                     summer pasture, temporary (re-sown) grass, and other unregistered grass.
+#                     summer pasture, temporary (re-sown) grass, and other unregistered grass;
+#                     recent_permanent = weight kept by pasture that was NOT already permanent in the
+#                     2015 register (possibly ploughed since); organic_bonus = boost for organic farms.
 #                     Forest types come from IGN BD Foret in France:
 #                     beech, oak, chestnut, pine, sprucefir, mixedbroad, mixed, otherbroad.
 #                     `unknown_forest` is used where tree species are not mapped (outside France).
@@ -26,7 +28,7 @@ species:
     lookalikes: "Inocybe and Conocybe/Pholiotina species (some deadly) grow in the same turf."
     habitat:
       host: grass
-      pasture: {permanent: 1.0, rough: 0.8, temporary: 0.3, other: 0.5}
+      pasture: {permanent: 1.0, rough: 0.8, temporary: 0.3, other: 0.5, recent_permanent: 0.6, organic_bonus: 0.15}
       ph: [3.8, 4.6, 6.3, 7.4]
       elev: [150, 500, 1500, 2000]
       damp: 0.5
@@ -47,7 +49,7 @@ species:
     lookalikes: "Deadly Amanitas (white gills, volva at base) and yellow-staining Agaricus xanthodermus."
     habitat:
       host: grass
-      pasture: {permanent: 1.0, rough: 0.6, temporary: 0.6, other: 0.6}
+      pasture: {permanent: 1.0, rough: 0.6, temporary: 0.6, other: 0.6, recent_permanent: 0.85, organic_bonus: 0.1}
       ph: [4.8, 5.5, 7.6, 8.4]
       elev: [0, 0, 1200, 1800]
       damp: 0.2

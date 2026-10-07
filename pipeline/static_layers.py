@@ -283,16 +283,47 @@ def classify_pasture(p):
     return 0, f"other group {group}"
 
 
+def _with_organic(p):
+    cat, key = classify_pasture(p)
+    if cat in (1, 2, 3) and p.get("bio") in (True, "true", "True", 1, "1"):
+        return cat | 8, key + " organic"
+    return cat, key
+
+
 def rpg(grid: Grid):
     # all declared parcels: grassland types plus ploughed land, so arable fields the
-    # satellite mistakes for grass (young cereals) can be excluded
+    # satellite mistakes for grass (young cereals) can be excluded. Bit 8 = organic farm.
     feats = wfs_features("RPG.LATEST:parcelles_graphiques", grid, "RPG")
-    raster = _rasterise_features(feats, grid, classify_pasture, "RPG")
-    out = {"pa_" + name: block_mean((raster == i + 1).astype(np.float32), SUB).astype(np.float16)
+    raster = _rasterise_features(feats, grid, _with_organic, "RPG")
+    base = raster & 7
+    out = {"pa_" + name: block_mean((base == i + 1).astype(np.float32), SUB).astype(np.float16)
            for i, name in enumerate(PASTURE_TYPES)}
-    out["pa_tilled"] = block_mean((raster == 4).astype(np.float32), SUB).astype(np.float16)
+    out["pa_tilled"] = block_mean((base == 4).astype(np.float32), SUB).astype(np.float16)
+    out["pa_organic"] = block_mean((raster >= 8).astype(np.float32), SUB).astype(np.float16)
     log.info("parcel types: " + ", ".join(f"{k[3:]} {float(v.mean()) * 100:.1f}%" for k, v in out.items()))
     return out
+
+
+HISTORY_YEARS = (2015, 2016, 2017)
+
+
+def rpg_history(grid: Grid):
+    """Where permanent pasture / rough grazing was already declared in the oldest
+    available register (2015+). Grass that was permanent then and still is now has
+    most likely not been ploughed for a decade."""
+    for year in HISTORY_YEARS:
+        try:
+            feats = wfs_features(f"RPG.{year}:parcelles_graphiques", grid, f"RPG {year}",
+                                 cql="code_group IN ('17','18')")
+            raster = _rasterise_features(
+                feats, grid, lambda p: ((1, "permanent then") if str(p.get("code_group")) in ("17", "18")
+                                        else (0, "other")), f"RPG {year}")
+            frac = block_mean((raster == 1).astype(np.float32), SUB).astype(np.float16)
+            log.info(f"RPG {year}: permanent grass then covers {float(frac.mean()) * 100:.1f}% of region")
+            return {"pa_hist_perm": frac, "pa_hist_year": np.array(year)}
+        except Exception as exc:
+            log.warn(f"RPG {year} unavailable: {exc.__class__.__name__}: {str(exc)[:150]}")
+    raise RuntimeError("no historical RPG year available")
 
 
 # --------------------------------------------------------------------------- French soil pH (GIS Sol / INRAE)
@@ -353,9 +384,10 @@ GROUPS = {
     "lc": (1, lambda r, g, w: {"lc_" + k: v for k, v in landcover(r["bbox"], g).items()}),
     "ph": (2, build_ph),
     "bdforet": (1, lambda r, g, w: bdforet(g)),
-    "rpg": (2, lambda r, g, w: rpg(g)),
+    "rpg": (3, lambda r, g, w: rpg(g)),
+    "rpg_hist": (1, lambda r, g, w: rpg_history(g)),
 }
-FRANCE_ONLY = {"bdforet", "rpg"}
+FRANCE_ONLY = {"bdforet", "rpg", "rpg_hist"}
 
 
 def _migrate_v1(region, cache_dir, rdir):

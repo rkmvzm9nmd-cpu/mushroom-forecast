@@ -140,6 +140,8 @@ def process_region(region, species, out_dir, cache_dir):
                     "rpg": all(("pa_" + k) in layers for k in static_layers.PASTURE_TYPES),
                     "soil_ph": bool(np.isfinite(layers.get("ph", np.array([np.nan]))).any()),
                     "soil_ph_france": bool(layers.get("ph_src_fr", np.array([False])).any()),
+                    "pasture_history_year": int(layers["pa_hist_year"]) if "pa_hist_year" in layers else None,
+                    "organic_flag": "pa_organic" in layers,
                     "landcover": "lc_grass" in layers},
     }
     with open(os.path.join(rdir, "meta.json"), "w") as f:
