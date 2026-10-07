@@ -61,6 +61,9 @@ jobs:
         run: |
           cd archive
           [ -n "$(ls -A)" ] || exit 0
+          # keep the latest build log + per-region summaries alongside, for easy checking
+          cp ../build/site/data/status.json . 2>/dev/null || true
+          for d in ../build/site/data/*/; do r=$(basename "$d"); cp "$d/meta.json" "meta-$r.json" 2>/dev/null || true; done
           git init -q -b weather-archive
           git add -A
           git -c user.name="forecast-bot" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
