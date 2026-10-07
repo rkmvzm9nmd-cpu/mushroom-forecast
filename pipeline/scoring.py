@@ -27,7 +27,12 @@ def lag_weights(lag0, lag1, ramp_in=4, ramp_out=6):
     return np.minimum(up, down)
 
 
-def weather_scores(sp, P, Tmin, Tmax, dates, day_idx, dry=None):
+def soil_factor(swi_pct):
+    """Satellite topsoil wetness (0-100 %) -> 0..1: dry below ~15 %, fully moist above ~40 %."""
+    return np.clip((swi_pct - 15.0) / 25.0, 0.15, 1.0)
+
+
+def weather_scores(sp, P, Tmin, Tmax, dates, day_idx, dry=None, soil=None, soil_weights=None):
     """Return list of (H, W) arrays, one per index in day_idx."""
     w = sp["weather"]
     lag0, lag1 = w["lag"]
@@ -48,6 +53,10 @@ def weather_scores(sp, P, Tmin, Tmax, dates, day_idx, dry=None):
         t7max = Tmax[max(t - 6, 0):t + 1].mean(axis=0)
         drying = np.maximum(dry[t] - 4, 0) * 0.08 * (1 + np.maximum(t7max - 20, 0) / 10)
         moist_f = np.where(recent >= 5, 1.0, np.clip(1 - drying, 0.2, 1))
+        if soil is not None and soil_weights is not None:
+            # measured soil wetness takes over from the rain estimate for the next few days
+            wgt = soil_weights[len(out)] if len(out) < len(soil_weights) else 0.0
+            moist_f = (1 - wgt) * moist_f + wgt * soil_factor(soil)
         t7 = Tmean[max(t - 6, 0):t + 1].mean(axis=0)
         temp_f = trapezoid(t7, *w["temp"])
         frost_days = (Tmin[max(t - 3, 0):t + 1] < -1.5).sum(axis=0)

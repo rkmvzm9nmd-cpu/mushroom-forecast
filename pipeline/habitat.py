@@ -50,6 +50,9 @@ def _plough_factor(hab, layers):
     f = f - (1 - pk.get("recent", 1.0)) * layers["pl_recent"].astype(np.float32)
     f = f - (1 - pk.get("mid", 1.0)) * layers["pl_mid"].astype(np.float32)
     f = f - (1 - pk.get("changed", 1.0)) * layers["pl_changed"].astype(np.float32)
+    if "mw_many" in layers:  # cut 3+ times a year = intensive silage grass
+        f = f - (1 - pk.get("mown_twice", 1.0)) * layers["mw_two"].astype(np.float32)
+        f = f - (1 - pk.get("mown_3plus", 1.0)) * layers["mw_many"].astype(np.float32)
     return np.clip(f, 0, 1)
 
 

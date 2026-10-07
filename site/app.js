@@ -116,9 +116,11 @@
     if (mode === "habitat") return `${r}/habitat/${sid}.png`;
     if (mode === "wx") return `${r}/wx/${sid}_${day}.png`;
     if (mode === "rain") return `${r}/rain/${day}.png`;
+    if (mode === "soil") return `${r}/wx/soil.png`;
     return `${r}/score/${sid}_${day}.png`;
   }
-  const isHalf = (mode) => mode === "wx" || mode === "rain";
+  const isHalf = (mode) => mode === "wx" || mode === "rain" || mode === "soil";
+  const isBlue = (mode) => mode === "rain" || mode === "soil";
   function overlayBounds(half) {
     const g = S.meta.grid, k = half ? S.meta.half : 1;
     const w = half ? Math.ceil(g.width / k) * k : g.width, h = half ? Math.ceil(g.height / k) * k : g.height;
@@ -187,7 +189,7 @@
     let url;
     try {
       const gray = await loadGray(path);
-      url = await colourise(gray, mode === "rain" ? LUTS.rain : LUTS.heat);
+      url = await colourise(gray, isBlue(mode) ? LUTS.rain : LUTS.heat);
     } catch (e) {
       if (token === drawToken) { if (scoreOverlay) scoreOverlay.setOpacity(0); toast("No data for this view yet"); }
       return;
@@ -201,9 +203,9 @@
       scoreOverlay.setUrl(url); scoreOverlay.setBounds(L.latLngBounds(bounds)); scoreOverlay.setOpacity(S.opacity);
       if (old && old.startsWith("blob:")) setTimeout(() => URL.revokeObjectURL(old), 3000);
     }
-    $("legendBar").style.background = legendCss(mode === "rain" ? "rain" : "heat");
-    $("legendLo").textContent = mode === "rain" ? "0 mm" : "low";
-    $("legendHi").textContent = mode === "rain" ? "100+ mm" : "high";
+    $("legendBar").style.background = legendCss(isBlue(mode) ? "rain" : "heat");
+    $("legendLo").textContent = mode === "rain" ? "0 mm" : mode === "soil" ? "dry" : "low";
+    $("legendHi").textContent = mode === "rain" ? "100+ mm" : mode === "soil" ? `wet (${S.meta.soil_date || ""})` : "high";
     if (hotLayer.getLayers().length) showHotMarkers();
   }
 
@@ -235,12 +237,13 @@
       b.onclick = () => { S.day = i; renderDays(); draw(); refreshSheet(); };
       el.appendChild(b);
     });
-    const hab = S.mode === "habitat";
+    const hab = S.mode === "habitat" || S.mode === "soil";
     el.style.opacity = hab ? 0.4 : 1;
   }
   document.querySelectorAll(".modes button").forEach((b) => {
     b.onclick = () => {
       if (!S.meta.weather_ok && b.dataset.mode !== "habitat") { toast("Weather data missing today"); return; }
+      if (b.dataset.mode === "soil" && !S.meta.soil_date) { toast("Satellite soil moisture not available today"); return; }
       S.mode = b.dataset.mode;
       document.querySelectorAll(".modes button").forEach((x) => x.classList.toggle("on", x === b));
       renderDays(); draw();
@@ -277,9 +280,9 @@
       <h3>Model check</h3><p>Habitat map ranks real recorded finds above random ground: <b>${auc}</b>.</p>
       <h3>How to read the map</h3>
       <p class="note"><b>Likelihood</b> = habitat × recent weather. <b>Habitat</b> = tree species or pasture type (old pasture vs re-sown), soil acidity, altitude and damp ground.
-      <b>Weather</b> = rain in the right window before the date, temperature and frost. Colours show odds, not certainty.</p>
+      <b>Weather</b> = rain in the right window before the date, temperature, frost, and (for the next few days) satellite-measured soil wetness. Grassland also loses score where satellites saw recent ploughing or frequent silage cuts. Colours show odds, not certainty.</p>
       <p class="warn">Never eat a mushroom on the strength of this map. Get every find checked by an expert (French pharmacists and local mycological societies do this for free). Check local picking limits and ask before entering farmland.</p>
-      <p class="note">Data: Open-Meteo, IGN BD Forêt & RPG farm parcels, ESA WorldCover, Copernicus DEM, INRAE/GIS Sol & ISRIC SoilGrids soil pH, GBIF. <a href="data/status.json" style="color:inherit">Build log</a>.</p>`);
+      <p class="note">Data: Open-Meteo, Copernicus (soil water index, grassland ploughing & mowing), IGN BD Forêt & RPG farm parcels, ForestPaths tree genera, ESA WorldCover, Copernicus DEM, INRAE/GIS Sol & ISRIC SoilGrids soil pH, GBIF. <a href="data/status.json" style="color:inherit">Build log</a>.</p>`);
   }
   $("infoBtn").onclick = showInfo;
 
@@ -408,6 +411,8 @@
     let rain = null, hab = null;
     try { if (weather) rain = sampleAt(await loadGray(layerPath("rain", null, day)), lat, lng, true); } catch { /* */ }
     try { hab = sampleAt(await loadGray(layerPath("habitat", S.species)), lat, lng); } catch { /* */ }
+    let soil = null;
+    try { if (S.meta.soil_date) soil = sampleAt(await loadGray(layerPath("soil")), lat, lng, true); } catch { /* */ }
     const outside = rows.every(([, v]) => v == null);
     if (outside) { popup.setContent("Outside the modelled area."); return; }
     rows.sort((a, b) => (b[1] || 0) - (a[1] || 0));
@@ -416,7 +421,7 @@
     popup.setContent(`
       <div class="pop-title">${label}</div>
       <div class="pop-grid">${rows.map(([s, v]) => `<span>${esc(s.name)}</span><span class="v">${pct(v)}</span>`).join("")}</div>
-      <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}</div>
+      <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}${soil != null ? ` · soil wetness (satellite, ${esc(S.meta.soil_date)}): ${Math.round(soil * 100)}%` : ""}</div>
       ${outlookHtml}
       <div class="btns"><button class="btn primary" id="saveHere">Save spot</button><a class="btn" href="${navUrl(lat.toFixed(5), lng.toFixed(5))}" target="_blank" rel="noopener">Directions</a></div>`);
     const saveBtn = document.getElementById("saveHere");

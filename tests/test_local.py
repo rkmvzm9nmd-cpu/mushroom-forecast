@@ -9,7 +9,7 @@ import tempfile
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pipeline import run, static_layers, weather, sightings  # noqa: E402
+from pipeline import run, static_layers, weather, sightings, soil_moisture  # noqa: E402
 
 calls = []
 
@@ -64,6 +64,8 @@ def fake_gbif(species, bbox):
 
 
 static_layers.GROUPS = fake_groups()
+soil_moisture.latest = lambda bbox, lon, lat, today: (
+    np.full(lon.shape, 30.0, np.float32), (dt.date.fromisoformat(today) - dt.timedelta(days=2)).isoformat())
 weather.fetch = fake_fetch
 sightings.fetch = fake_gbif
 os.environ["SPOTS_JSON"] = json.dumps([{"name": "test", "lat": 44.75, "lon": 3.75}])
@@ -84,13 +86,15 @@ with tempfile.TemporaryDirectory() as tmp:
         run.main()
     meta = json.load(open(os.path.join(tmp, "site/data/massif-central-alps/meta.json")))
     ro = json.load(open(os.path.join(tmp, "site/data/brasov-fagaras/meta.json")))
-    print("romania sources", ro["sources"], "dates", ro["dates"][:2])
+    print("romania sources", ro["sources"], "dates", ro["dates"][:2], "soil", ro["soil_date"])
+    assert os.path.exists(os.path.join(tmp, "site/data/brasov-fagaras/wx/soil.png"))
     import pipeline.habitat as H
     lay = {"lc_grass": np.ones((2, 2), np.float16), "lc_shrub": np.zeros((2, 2), np.float16),
            "pl_recent": np.array([[1, 0], [0, 0]], np.float16), "pl_mid": np.array([[0, 1], [0, 0]], np.float16),
-           "pl_changed": np.zeros((2, 2), np.float16)}
+           "pl_changed": np.zeros((2, 2), np.float16),
+           "mw_two": np.zeros((2, 2), np.float16), "mw_many": np.array([[0, 0], [1, 0]], np.float16)}
     sp = [s_ for s_ in run.load_yaml("species.yaml")["species"] if s_["id"] == "psilocybe"][0]
-    print("plough effect (recent, mid / none):", H.host_score(sp, lay, (2, 2)).tolist())
+    print("plough effect (recent, mid / mown 3+, none):", H.host_score(sp, lay, (2, 2)).tolist())
     print("past_days requested per run:", calls)
     print("sources", meta["sources"])
     print("max scores", {k: v["max"][:4] for k, v in meta["stats"].items()})

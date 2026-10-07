@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import yaml
 
-from . import archive, alerts, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
+from . import archive, alerts, soil_moisture, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
 from .grid import Grid, downsample, upsample
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,6 +82,7 @@ def process_region(region, species, out_dir, cache_dir):
     tz = region.get("timezone", "UTC")
     today = dt.datetime.now(ZoneInfo(tz)).date().isoformat()
     dates, scores, weather_ok = [], {}, False
+    soil_date = None
     lon, lat = grid.cell_lonlat()
     try:
         spacing = region.get("weather_spacing", 0.1)
@@ -103,11 +104,23 @@ def process_region(region, species, out_dir, cache_dir):
         day_idx = list(range(t0, len(all_dates)))
         dates = [all_dates[t] for t in day_idx]
         dry = scoring.dry_run_length(P)
+        soil, soil_w, soil_date = None, None, None
+        try:
+            soil, soil_date = soil_moisture.latest(region["bbox"], hlon, hlat, today)
+            age = (dt.date.fromisoformat(today) - dt.date.fromisoformat(soil_date)).days
+            soil_w = [float(np.clip(0.8 * (1 - (d + age) / 8.0), 0, 0.8)) for d in range(len(day_idx))]
+            render.save_png(soil / 100.0, os.path.join(rdir, "wx", "soil.png"))
+            log.info(f"soil moisture weight by day: {[round(x, 2) for x in soil_w]}")
+        except Exception as exc:
+            if "not set" in str(exc):
+                log.info(f"soil moisture skipped: {exc}")
+            else:
+                log.warn(f"soil moisture unavailable: {exc.__class__.__name__}: {str(exc)[:200]}")
         for d, t in enumerate(day_idx):
             render.save_png(scoring.rain_window(P, t), os.path.join(rdir, "rain", f"{d}.png"),
                             scale=255.0 / 100.0)  # 0..100 mm over 14 days
         for sp in species:
-            Ws = scoring.weather_scores(sp, P, Tmin, Tmax, all_dates, day_idx, dry)
+            Ws = scoring.weather_scores(sp, P, Tmin, Tmax, all_dates, day_idx, dry, soil, soil_w)
             scores[sp["id"]] = []
             for d, W in enumerate(Ws):
                 render.save_png(W, os.path.join(rdir, "wx", f"{sp['id']}_{d}.png"))
@@ -134,11 +147,13 @@ def process_region(region, species, out_dir, cache_dir):
     meta = {
         "id": rid, "name": region["name"], "generated": dt.datetime.now(ZoneInfo(tz)).isoformat(timespec="minutes"),
         "grid": grid.to_json(), "half": HALF, "dates": dates, "weather_ok": weather_ok,
+        "soil_date": soil_date,
         "places": region.get("places", []), "good_threshold": GOOD,
         "stats": stats, "hotspots": spots, "validation": validation,
         "sources": {"tree_species": (None if not all(("ft_" + k) in layers for k in static_layers.FOREST_TYPES)
                                      else "IGN BD Foret" if region.get("country") == "FR" else "ForestPaths EU 10 m"),
                     "ploughing_year": int(layers["pl_year"]) if "pl_year" in layers else None,
+                    "mowing_year": int(layers["mw_year"]) if "mw_year" in layers else None,
                     "rpg": all(("pa_" + k) in layers for k in static_layers.PASTURE_TYPES),
                     "soil_ph": bool(np.isfinite(layers.get("ph", np.array([np.nan]))).any()),
                     "soil_ph_france": bool(layers.get("ph_src_fr", np.array([False])).any()),

@@ -428,45 +428,75 @@ def forest_eu(grid: Grid, workdir):
     return out
 
 
-# --------------------------------------------------------------------------- ploughing (Copernicus, Europe)
+# --------------------------------------------------------------------------- grassland use (Copernicus, Europe)
 PLOUGH_COLLECTION = "clms_vlcc_ploughing-indicator_europe_10m_yearly_v1"
+MOWING_COLLECTION = "clms_vlcc_grassland-mowing-events_europe_10m_yearly_v1"
+CDSE_STAC = "https://stac.dataspace.copernicus.eu/v1/search"
 
 
-def plough(region, grid: Grid, workdir):
-    """Copernicus HRL grassland ploughing indicator: years since ploughing was last
-    detected inside permanent grassland (0-6), 100 = herbaceous cover changed,
-    253 = no ploughing information. Needs a free Copernicus Data Space account."""
+def cdse_env():
+    """GDAL settings for reading Copernicus Data Space files straight from S3."""
     import rasterio
-    from rasterio.enums import Resampling
     key, secret = os.environ.get("CDSE_S3_KEY"), os.environ.get("CDSE_S3_SECRET")
     if not (key and secret):
-        raise RuntimeError("CDSE_S3_KEY / CDSE_S3_SECRET not set (skipping ploughing layer)")
-    w, s, e, n = region["bbox"]
-    r = requests.post("https://stac.dataspace.copernicus.eu/v1/search", headers=UA, timeout=120,
-                      json={"collections": [PLOUGH_COLLECTION], "bbox": [w, s, e, n], "limit": 200})
+        raise RuntimeError("CDSE_S3_KEY / CDSE_S3_SECRET not set")
+    return rasterio.Env(AWS_ACCESS_KEY_ID=key, AWS_SECRET_ACCESS_KEY=secret,
+                        AWS_S3_ENDPOINT="eodata.dataspace.copernicus.eu",
+                        AWS_VIRTUAL_HOSTING="FALSE", AWS_HTTPS="YES",
+                        GDAL_HTTP_MAX_RETRY="4", GDAL_HTTP_RETRY_DELAY="3")
+
+
+def cdse_search(collection, bbox, **extra):
+    body = {"collections": [collection], "bbox": list(bbox), "limit": 200, **extra}
+    r = requests.post(CDSE_STAC, headers=UA, timeout=120, json=body)
     r.raise_for_status()
-    items = r.json().get("features", [])
+    return r.json().get("features", [])
+
+
+def _latest_year_tiles(collection, bbox, asset="data"):
+    items = cdse_search(collection, bbox)
     if not items:
-        raise RuntimeError("no ploughing-indicator tiles for this region")
+        raise RuntimeError(f"no {collection} tiles for this region")
     latest = max(i["properties"].get("datetime", "") for i in items)
-    hrefs = [i["assets"]["data"]["href"] for i in items if i["properties"].get("datetime") == latest]
-    log.info(f"ploughing indicator: {len(hrefs)} tiles for {latest[:4]}")
+    hrefs = [i["assets"][asset]["href"] for i in items if i["properties"].get("datetime") == latest]
+    return ["/vsis3/" + h[len("s3://"):] for h in hrefs], int(latest[:4])
+
+
+def grassland_use(region, grid: Grid, workdir):
+    """Copernicus HRL grasslands (10 m, Europe):
+    * ploughing indicator - years since ploughing was last seen in permanent grassland
+      (0-6), 100 = herbaceous cover changed, 253 = no ploughing information;
+    * mowing events - number of cuts detected in the latest year (0, 1, 2, 3, 4+)."""
+    from rasterio.enums import Resampling
     fine = grid.finer(SUB)
-    paths = ["/vsis3/" + h[len("s3://"):] for h in hrefs]
-    with rasterio.Env(AWS_ACCESS_KEY_ID=key, AWS_SECRET_ACCESS_KEY=secret,
-                      AWS_S3_ENDPOINT="eodata.dataspace.copernicus.eu",
-                      AWS_VIRTUAL_HOSTING="FALSE", AWS_HTTPS="YES"):
+    out = {}
+    with cdse_env():
+        paths, year = _latest_year_tiles(PLOUGH_COLLECTION, region["bbox"])
         v, used = _reproject_tiles(paths, fine, Resampling.nearest, np.uint8, 255)
-    if used == 0:
-        raise RuntimeError("could not read any ploughing tiles (check the S3 keys)")
-    counts = {int(k): int(c) for k, c in zip(*np.unique(v, return_counts=True))}
-    log.info(f"ploughing indicator value counts: {counts}")
-    return {
-        "pl_recent": block_mean((v <= 2).astype(np.float32), SUB).astype(np.float16),       # ploughed 0-2 yrs ago
-        "pl_mid": block_mean(((v >= 3) & (v <= 6)).astype(np.float32), SUB).astype(np.float16),
-        "pl_changed": block_mean((v == 100).astype(np.float32), SUB).astype(np.float16),
-        "pl_year": np.array(int(latest[:4])),
-    }
+        if used == 0:
+            raise RuntimeError("could not read any ploughing tiles (check the S3 keys)")
+        log.info(f"ploughing indicator {year}: {used} tiles, values "
+                 f"{ {int(k): int(c) for k, c in zip(*np.unique(v, return_counts=True))} }")
+        out.update({
+            "pl_recent": block_mean((v <= 2).astype(np.float32), SUB).astype(np.float16),
+            "pl_mid": block_mean(((v >= 3) & (v <= 6)).astype(np.float32), SUB).astype(np.float16),
+            "pl_changed": block_mean((v == 100).astype(np.float32), SUB).astype(np.float16),
+            "pl_year": np.array(year),
+        })
+        try:
+            paths, myear = _latest_year_tiles(MOWING_COLLECTION, region["bbox"])
+            m, used = _reproject_tiles(paths, fine, Resampling.nearest, np.uint8, 255)
+            log.info(f"mowing events {myear}: {used} tiles, values "
+                     f"{ {int(k): int(c) for k, c in zip(*np.unique(m, return_counts=True))} }")
+            if used:
+                out.update({
+                    "mw_two": block_mean((m == 2).astype(np.float32), SUB).astype(np.float16),
+                    "mw_many": block_mean(((m >= 3) & (m <= 10)).astype(np.float32), SUB).astype(np.float16),
+                    "mw_year": np.array(myear),
+                })
+        except Exception as exc:
+            log.warn(f"mowing events unavailable: {exc.__class__.__name__}: {str(exc)[:200]}")
+    return out
 
 
 # --------------------------------------------------------------------------- cached groups
@@ -479,7 +509,7 @@ GROUPS = {
     "rpg": (3, lambda r, g, w: rpg(g)),
     "rpg_hist": (1, lambda r, g, w: rpg_history(g)),
     "forest_eu": (1, lambda r, g, w: forest_eu(g, w)),
-    "plough": (1, plough),
+    "plough": (2, grassland_use),
 }
 FRANCE_ONLY = {"bdforet", "rpg", "rpg_hist"}
 OUTSIDE_FRANCE = {"forest_eu"}
