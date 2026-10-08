@@ -44,6 +44,7 @@ MIN_HAB = 40          # finds needed to fit habitat
 MIN_TIMING = 50       # dated finds needed to fit timing
 MIN_SEASON = 50       # finds needed to learn season
 MIN_SKILL = 0.60      # a learned habitat model must reach at least this AUC to be used
+MIN_TIMING_SKILL = 0.58  # ... and learned timing at least this (test years)
 
 
 def auc(pos, neg):
@@ -318,9 +319,9 @@ def fit_timing(sp, points, hist, rng):
                 "params": {"lag": lag, "rain_need": need, "temp": temp},
                 "rule_params": {"lag": w["lag"], "rain_need": w["rain_need"], "temp": w["temp"]}})
     if res["n_test"] >= 20 and res["auc_fit_test"] is not None and res["auc_rule_test"] is not None:
-        res["use"] = bool(res["auc_fit_test"] >= res["auc_rule_test"] + 0.02)
+        res["use"] = bool(res["auc_fit_test"] >= max(res["auc_rule_test"] + 0.02, MIN_TIMING_SKILL))
     elif res["n_train"] >= 100 and res["auc_rule_train"] is not None:
-        res["use"] = bool(a >= res["auc_rule_train"] + 0.04)
+        res["use"] = bool(a >= max(res["auc_rule_train"] + 0.04, MIN_TIMING_SKILL + 0.04))
     return res
 
 
