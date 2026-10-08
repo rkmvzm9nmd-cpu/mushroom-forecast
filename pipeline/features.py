@@ -9,6 +9,7 @@ from __future__ import annotations
 import numpy as np
 from scipy.ndimage import uniform_filter
 
+from . import habitat as hab_mod
 from .static_layers import FOREST_TYPES
 
 GRASS_KEYS = ["pa_permanent", "pa_rough", "pa_temporary", "pa_tilled", "pl_recent", "pl_mid", "pl_changed"]
@@ -62,3 +63,10 @@ def predict(model, rule, shared):
         z += np.float32(c / s) * (x - np.float32(m))
     p = 1.0 / (1.0 + np.exp(-np.clip(z, -30, 30)))
     return np.clip(p / max(model["scale"], 1e-6), 0, 1).astype(np.float32)
+
+
+def host_mask(sp, layers, shape, full_at=0.25):
+    """0..1: is there any host here at all (trees for forest species, unploughed grass for
+    grassland species)? The learned model only re-ranks places inside this mask, so it can
+    never light up lakes, towns or ploughed fields just because recorders go there."""
+    return np.clip(hab_mod.host_score(sp, layers, shape) / full_at, 0, 1).astype(np.float32)

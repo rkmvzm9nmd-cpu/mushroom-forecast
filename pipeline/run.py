@@ -124,7 +124,7 @@ def process_region(region, species, out_dir, cache_dir):
             # learned model (tested better than the rules against real finds)
             if shared is None:
                 shared = features.shared_features(layers, terr, sat_wet, grid.shape)
-            chosen = features.predict(hc["model"], base, shared)
+            chosen = features.predict(hc["model"], base, shared) * features.host_mask(sp, layers, grid.shape)
             v["learned_habitat"] = True
             v["auc_learned"] = sightings.validate(recs.get(sid, []), chosen, grid, np.random.default_rng(42)).get("auc")
         elif sat_wet is not None:

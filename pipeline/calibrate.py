@@ -43,6 +43,7 @@ WINDOW = 45           # days of rain history kept per point
 MIN_HAB = 40          # finds needed to fit habitat
 MIN_TIMING = 50       # dated finds needed to fit timing
 MIN_SEASON = 50       # finds needed to learn season
+MIN_SKILL = 0.60      # a learned habitat model must reach at least this AUC to be used
 
 
 def auc(pos, neg):
@@ -138,6 +139,7 @@ def fit_habitat(region, species, cache_dir):
     for sp in species:
         sid = sp["id"]
         rule = features.smooth({"r": hab_mod.habitat(sp, layers, grid, terr)})["r"]
+        mask = features.smooth({"m": features.host_mask(sp, layers, grid.shape)})["m"]
         pr, pc, _ = _cells(recs.get(sid, []), grid)
         res = {"n": int(len(pr)), "use": False}
         if len(pr) < 5 or len(br) < 50:
@@ -165,21 +167,23 @@ def fit_habitat(region, species, cache_dir):
         if True:
             for tr, te in splitter:
                 if y[tr].sum() < 5 or y[te].sum() < 1:
-                    oof[te] = Z[te, 0]
+                    oof[te] = Z[te, 0] - 10
                     continue
                 m = LogisticRegression(C=0.3, class_weight="balanced", max_iter=3000).fit(Z[tr], y[tr])
                 oof[te] = m.decision_function(Z[te])
+            # the learned score is always limited to cells with some host (trees / unploughed grass)
+            oof = 1 / (1 + np.exp(-oof)) * mask[rows, cols]
             res["auc_fit_cv"] = auc(oof[y == 1], oof[y == 0])
         m = LogisticRegression(C=0.3, class_weight="balanced", max_iter=3000).fit(Z, y)
         model = {"features": cols_, "coef": m.coef_[0].tolist(), "intercept": float(m.intercept_[0]),
                  "mean": mean.tolist(), "std": std.tolist(), "scale": 1.0}
-        raw = features.predict(model, rule, shared)
+        raw = features.predict(model, rule, shared) * mask
         model["scale"] = float(np.quantile(raw[land], 0.995)) if land.any() else 1.0
         res["model"] = model
         order = np.argsort(-np.abs(m.coef_[0]))[:6]
         res["top_factors"] = [{"feature": cols_[i], "weight": round(float(m.coef_[0][i]), 3)} for i in order]
         res["use"] = bool(res.get("auc_fit_cv") is not None and res.get("auc_rule") is not None
-                          and res["auc_fit_cv"] >= res["auc_rule"] + 0.02)
+                          and res["auc_fit_cv"] >= max(res["auc_rule"] + 0.02, MIN_SKILL))
         log.info(f"{rid} {sid}: n={len(pr)} rule AUC {res['auc_rule']:.3f} fitted (CV) "
                  f"{res.get('auc_fit_cv') or float('nan'):.3f} -> {'LEARNED' if res['use'] else 'rules kept'}; "
                  f"top: {[(t['feature'], t['weight']) for t in res['top_factors']]}")
@@ -232,7 +236,7 @@ def load_history(keys, hist_dir, end):
             arr = lambda v: np.array([np.nan if x is None else x for x in dd[v]], np.float32)
             rec = {"start": dd["time"][0], "P": np.nan_to_num(arr("precipitation_sum")),
                    "T": arr("temperature_2m_mean"), "Tmin": arr("temperature_2m_min")}
-            np.savez_compressed(os.path.join(hist_dir, f"c_{k}.npz"), start=rec["start"], end=dd["time"][-1], **rec)
+            np.savez_compressed(os.path.join(hist_dir, f"c_{k}.npz"), end=dd["time"][-1], **rec)
             have[k] = rec
         time.sleep(12)
     return have
