@@ -51,14 +51,16 @@ def bare_factor(pk, layers):
 
 
 BARE_FROM, BARE_FULL = 0.10, 0.35
-BARE_MIN_AUC = 0.75
+BARE_MAX_FP = 0.10      # at most 10% of real pasture may be flagged at all
+BARE_MIN_LIFT = 2.5     # arable must be flagged at least 2.5x as often as pasture
 
 
 def bare_gate(layers):
-    """Use the bare-soil layer in a region only if it separates arable from pasture there:
-    declared parcels where available (France RPG, Scotland HabMoS), else satellite cropland vs
-    grassland. Returns (used, auc, reference); drops the layer from `layers` if not used."""
-    from scipy.stats import rankdata
+    """Use the bare-soil layer in a region only if it is safe and informative there: it may flag
+    at most 10% of pasture (false alarms), and must flag arable land at least 2.5x as often.
+    Reference: declared parcels where available (France RPG, Scotland HabMoS), else the
+    land-cover map's cropland vs grassland. Returns (used, stats, reference); drops the layer
+    from `layers` if not used."""
     if "bare_frac" not in layers:
         return False, None, None
     b = layers["bare_frac"].astype(np.float32)
@@ -66,19 +68,18 @@ def bare_gate(layers):
         ref, crop, past = "declared parcels", layers["pa_tilled"], layers["pa_permanent"]
     else:
         ref, crop, past = "land-cover map", layers.get("lc_crop"), layers.get("lc_grass")
-    auc = None
+    stats = None
     if crop is not None and past is not None:
         c = b[(crop.astype(np.float32) > 0.7) & np.isfinite(b)]
         g = b[(past.astype(np.float32) > 0.7) & np.isfinite(b)]
         if len(c) > 50 and len(g) > 50:
-            rng = np.random.default_rng(0)
-            c, g = rng.choice(c, min(len(c), 20000)), rng.choice(g, min(len(g), 20000))
-            r = rankdata(np.concatenate([c, g]))
-            auc = float((r[:len(c)].sum() - len(c) * (len(c) + 1) / 2) / (len(c) * len(g)))
-    used = auc is not None and auc >= BARE_MIN_AUC
+            stats = {"pasture_flagged": round(float(np.mean(g >= BARE_FROM)), 3),
+                     "arable_flagged": round(float(np.mean(c >= BARE_FROM)), 3)}
+    used = bool(stats and stats["pasture_flagged"] <= BARE_MAX_FP
+                and stats["arable_flagged"] >= BARE_MIN_LIFT * max(stats["pasture_flagged"], 0.01))
     if not used:
         layers.pop("bare_frac", None)
-    return used, auc, ref
+    return used, stats, ref
 
 
 def _plough_factor(hab, layers):

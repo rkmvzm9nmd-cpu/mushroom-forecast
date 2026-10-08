@@ -117,7 +117,7 @@ def relative_wetness(ndmi, layers):
 # ---------------------------------------------------------------- bare soil (tillage)
 BARE_MONTHS = (4, 5, 9, 10, 11)   # sowing (Apr-May) and stubble / autumn ploughing (Sep-Nov)
 BARE_NDVI = 0.25                  # bare earth; dormant brown grass stays above this
-BARE_PER_TILE_MONTH = 2
+BARE_PER_TILE_MONTH = 4
 BARE_BUDGET_S = 20 * 60
 
 

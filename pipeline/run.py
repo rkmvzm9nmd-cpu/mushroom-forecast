@@ -152,11 +152,9 @@ def process_region(region, species, out_dir, cache_dir):
     bare_info = None
     if "bare_frac" in layers:
         raw = dict(layers)
-        used, bauc, bref = hab_mod.bare_gate(layers)
-        log.info(f"{rid}: bare-soil check separates arable from pasture ({bref}) with AUC "
-                 f"{bauc if bauc is None else round(bauc, 2)} -> {'USED' if used else 'not used here'}")
-        bare_info = {"built": str(raw.get("bare_built", "")), "used": used,
-                     "auc": None if bauc is None else round(bauc, 3)}
+        used, bstats, bref = hab_mod.bare_gate(layers)
+        log.info(f"{rid}: bare-soil check vs {bref}: {bstats} -> {'USED' if used else 'not used here'}")
+        bare_info = {"built": str(raw.get("bare_built", "")), "used": used, "check": bstats, "reference": bref}
         if used:
             render.save_png(np.nan_to_num(raw["bare_frac"].astype(np.float32)), os.path.join(rdir, "wx", "bare.png"))
         bare_check(region, raw, layers, grid, terr, species)
