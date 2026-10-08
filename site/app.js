@@ -433,7 +433,7 @@
     let satw = null;
     try { if (S.meta.satellite_wetness) satw = sampleAt(await loadGray(`${S.meta.id}/wx/satwet.png`), lat, lng); } catch { /* */ }
     let bare = null;
-    try { if (S.meta.bare_soil) bare = sampleAt(await loadGray(`${S.meta.id}/wx/bare.png`), lat, lng); } catch { /* */ }
+    try { if (S.meta.bare_soil && S.meta.bare_soil.used) bare = sampleAt(await loadGray(`${S.meta.id}/wx/bare.png`), lat, lng); } catch { /* */ }
     let soil = null;
     try { if (S.meta.soil_date) soil = sampleAt(await loadGray(layerPath("soil")), lat, lng, true); } catch { /* */ }
     const outside = rows.every(([, v]) => v == null);

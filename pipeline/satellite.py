@@ -115,7 +115,8 @@ def relative_wetness(ndmi, layers):
 
 
 # ---------------------------------------------------------------- bare soil (tillage)
-BARE_MONTHS = (4, 5, 10, 11)   # grass is green then, while tilled fields lie bare after sowing / ploughing
+BARE_MONTHS = (4, 5, 9, 10, 11)   # sowing (Apr-May) and stubble / autumn ploughing (Sep-Nov)
+BARE_NDVI = 0.25                  # bare earth; dormant brown grass stays above this
 BARE_PER_TILE_MONTH = 2
 BARE_BUDGET_S = 20 * 60
 
@@ -136,8 +137,9 @@ def _tile(item):
 
 
 def bare_soil(region, grid: Grid, workdir):
-    """Share of clear Sentinel-2 views (Apr-May, Oct-Nov, last ~13 months) in which the
-    ground was bare soil (scene class 5). Old pasture is green then; tilled fields are not.
+    """Share of clear Sentinel-2 views (Apr-May, Sep-Nov, last ~13 months) in which the
+    ground was bare earth: scene class 5 ("not vegetated") AND NDVI below 0.25, so winter-brown
+    grass does not count. Old pasture is never bare; tilled fields are, after ploughing or sowing.
     Computed at ~50 m and averaged to the map grid, so part-tilled pixels get partial values."""
     from rasterio.enums import Resampling
     from .grid import block_mean
@@ -176,14 +178,25 @@ def bare_soil(region, grid: Grid, workdir):
         if time.time() - t0 > BARE_BUDGET_S:
             log.warn(f"bare soil: time budget reached after {used} scenes")
             break
+        a, p = it["assets"], it["properties"]
         try:
-            scl = _read(it["assets"]["scl"]["href"], fine, Resampling.nearest, np.uint8, 0)
+            scl = _read(a["scl"]["href"], fine, Resampling.nearest, np.uint8, 0)
+            clear = np.isin(scl, GOOD_SCL)
+            if clear.mean() < 0.002:
+                continue
+            cand = scl == 5
+            if cand.any():
+                red = _read(a["red"]["href"], fine, Resampling.average, np.float32, 0, overview=2).astype(np.float32)
+                nir = _read(a["nir08"]["href"], fine, Resampling.average, np.float32, 0).astype(np.float32)
+                if str(p.get("s2:processing_baseline", "0")) >= "04.00" and not p.get("earthsearch:boa_offset_applied", False):
+                    red, nir = red - 1000, nir - 1000
+                ndvi = (nir - red) / np.maximum(nir + red, 1)
+                cand &= (ndvi < BARE_NDVI) & (nir > 0)
         except Exception as exc:
             log.warn(f"bare soil {it['id']}: {exc.__class__.__name__}: {str(exc)[:140]}")
             continue
-        clear = np.isin(scl, GOOD_SCL)
         n_clear += clear.astype(np.uint8)
-        n_bare += (scl == 5).astype(np.uint8)
+        n_bare += cand.astype(np.uint8)
         used += 1
     frac = np.where(n_clear >= 2, n_bare / np.maximum(n_clear, 1), np.nan).astype(np.float32)
     known = np.isfinite(frac)
@@ -195,4 +208,5 @@ def bare_soil(region, grid: Grid, workdir):
              f"with 2+ clear views (median {np.median(obs):.0f} views)")
     if np.isfinite(out).mean() < 0.3:
         raise RuntimeError("too few clear views for the bare-soil layer")
-    return {"bare_frac": out.astype(np.float16), "bare_built": np.array(today.isoformat())}
+    return {"bare_frac": out.astype(np.float16), "bare_views": np.clip(obs, 0, 255).astype(np.uint8),
+            "bare_built": np.array(today.isoformat())}

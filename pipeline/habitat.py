@@ -51,6 +51,34 @@ def bare_factor(pk, layers):
 
 
 BARE_FROM, BARE_FULL = 0.10, 0.35
+BARE_MIN_AUC = 0.75
+
+
+def bare_gate(layers):
+    """Use the bare-soil layer in a region only if it separates arable from pasture there:
+    declared parcels where available (France RPG, Scotland HabMoS), else satellite cropland vs
+    grassland. Returns (used, auc, reference); drops the layer from `layers` if not used."""
+    from scipy.stats import rankdata
+    if "bare_frac" not in layers:
+        return False, None, None
+    b = layers["bare_frac"].astype(np.float32)
+    if "pa_tilled" in layers and "pa_permanent" in layers:
+        ref, crop, past = "declared parcels", layers["pa_tilled"], layers["pa_permanent"]
+    else:
+        ref, crop, past = "land-cover map", layers.get("lc_crop"), layers.get("lc_grass")
+    auc = None
+    if crop is not None and past is not None:
+        c = b[(crop.astype(np.float32) > 0.7) & np.isfinite(b)]
+        g = b[(past.astype(np.float32) > 0.7) & np.isfinite(b)]
+        if len(c) > 50 and len(g) > 50:
+            rng = np.random.default_rng(0)
+            c, g = rng.choice(c, min(len(c), 20000)), rng.choice(g, min(len(g), 20000))
+            r = rankdata(np.concatenate([c, g]))
+            auc = float((r[:len(c)].sum() - len(c) * (len(c) + 1) / 2) / (len(c) * len(g)))
+    used = auc is not None and auc >= BARE_MIN_AUC
+    if not used:
+        layers.pop("bare_frac", None)
+    return used, auc, ref
 
 
 def _plough_factor(hab, layers):

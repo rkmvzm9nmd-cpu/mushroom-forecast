@@ -36,8 +36,8 @@ def fake_groups():
 
     def rpg(r, g, w):
         grass = lc(r, g, w)["lc_grass"].astype(np.float32)
-        return {"pa_permanent": (grass * 0.6).astype(np.float16), "pa_rough": np.zeros_like(grass, np.float16),
-                "pa_temporary": (grass * 0.3).astype(np.float16), "pa_tilled": (grass * 0.05).astype(np.float16),
+        return {"pa_permanent": (grass * 0.8).astype(np.float16), "pa_rough": np.zeros_like(grass, np.float16),
+                "pa_temporary": (grass * 0.3).astype(np.float16), "pa_tilled": (1 - grass).astype(np.float16),
                 "pa_organic": (grass * 0.1).astype(np.float16)}
 
     def hist(r, g, w):
@@ -53,7 +53,9 @@ def fake_groups():
         grass = lc(r, g, w)["lc_grass"].astype(np.float32)
         h, wd = g.shape
         tilled = (np.mgrid[0:h, 0:wd][0] < h // 3) * grass       # top third of the grass "was tilled"
-        return {"bare_frac": (0.5 * tilled).astype(np.float16), "bare_built": np.array("2026-10-08")}
+        crop = lc(r, g, w)["lc_tree"].astype(np.float32)          # pretend: tree pixels are declared arable
+        return {"bare_frac": (0.5 * tilled + 0.6 * crop).astype(np.float16), "bare_views": np.full(g.shape, 6, np.uint8),
+                "bare_built": np.array("2026-10-08")}
 
     return {"bare_soil": (1, bare, 30), "ndmi": (1, ndmi, 5), "dem": (1, dem), "lc": (1, lc), "ph": (2, ph), "bdforet": (1, bdf), "rpg": (3, rpg), "rpg_hist": (1, hist)}
 

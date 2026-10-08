@@ -541,7 +541,7 @@ GROUPS = {
     "woodland_sct": (2, lambda r, g, w: scotland.woodland(g)),
     "habitat_sct": (1, lambda r, g, w: scotland.habitat_map(g)),
     "ndmi": (1, lambda r, g, w: satellite.ndmi_composite(r, g, w), 5),   # refreshed every 5 days
-    "bare_soil": (1, lambda r, g, w: satellite.bare_soil(r, g, w), 30),       # tilled-field check, monthly
+    "bare_soil": (2, lambda r, g, w: satellite.bare_soil(r, g, w), 30),       # tilled-field check, monthly
 }
 FRANCE_ONLY = {"bdforet", "rpg", "rpg_hist"}
 OUTSIDE_FRANCE = {"forest_eu"}

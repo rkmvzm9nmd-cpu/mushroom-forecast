@@ -86,34 +86,48 @@ def load_sightings(region, species, cache_dir):
         return {}
 
 
-def bare_check(region, layers, grid, terr, species):
+def bare_check(region, raw, layers, grid, terr, species):
     """Log how the bare-soil (tillage) check behaves: on declared pasture vs declared arable
-    land (France), and how much grassland habitat it removes, region-wide and near each place."""
-    bare = layers["bare_frac"].astype(np.float32)
-    if "pa_permanent" in layers and "pa_tilled" in layers:
+    land, how much grassland habitat it removes, and what the ground near each place is."""
+    bare = raw["bare_frac"].astype(np.float32)
+    if "pa_permanent" in raw and "pa_tilled" in raw:
         for lab, key in (("declared permanent pasture", "pa_permanent"), ("declared arable", "pa_tilled")):
-            m = (layers[key].astype(np.float32) > 0.7) & np.isfinite(bare)
+            m = (raw[key].astype(np.float32) > 0.7) & np.isfinite(bare)
             if m.sum() > 20:
                 v = bare[m]
                 log.info(f"bare soil on {lab}: mean {v.mean():.2f}, >=10% in {np.mean(v >= 0.10):.0%}, "
                          f">=35% in {np.mean(v >= 0.35):.0%} of {int(m.sum())} pixels")
     cell_km2 = float(np.mean((grid.res * np.cos(np.radians(grid.cell_lonlat()[1]))) ** 2)) / 1e6
-    no_bare = {k: v for k, v in layers.items() if k != "bare_frac"}
+    no_bare = {k: v for k, v in raw.items() if k != "bare_frac"}
+    with_bare = dict(no_bare, bare_frac=raw["bare_frac"])
+    views = raw.get("bare_views")
     for sp in species:
         if sp["habitat"]["host"] != "grass":
             continue
         before = hab_mod.habitat(sp, no_bare, grid, terr)
-        after = hab_mod.habitat(sp, layers, grid, terr)
+        after = hab_mod.habitat(sp, with_bare, grid, terr)
         lost = (before >= GOOD) & (after < GOOD)
-        msg = [f"{sp['id']}: bare-soil check removes {lost.sum() * cell_km2:.1f} of "
+        msg = [f"{sp['id']}: bare-soil check would remove {lost.sum() * cell_km2:.1f} of "
                f"{(before >= GOOD).sum() * cell_km2:.1f} km2 of good habitat"]
         for pl in region.get("places", []):
             r, c = grid.lonlat_to_cell(pl["lon"], pl["lat"])
             r, c, k = int(r), int(c), int(round(3000 / (grid.res * np.cos(np.radians(pl["lat"])))))
             win = (slice(max(r - k, 0), r + k + 1), slice(max(c - k, 0), c + k + 1))
-            b = (before[win] >= GOOD).sum()
-            if b:
-                msg.append(f"{pl['name']} (3 km): {lost[win].sum()}/{b} px")
+            good = before[win] >= GOOD
+            if not good.any():
+                continue
+            part = f"{pl['name']} (3 km): {lost[win].sum()}/{good.sum()} px"
+            if sp["id"] == "psilocybe":
+                bw = bare[win][good]
+                part += (f" [good px: satellite-checked {np.isfinite(bw).mean():.0%}, bare>=10% {np.mean(np.nan_to_num(bw) >= 0.1):.0%}"
+                         + (f", median clear views {np.median(views[win][good]):.0f}" if views is not None else ""))
+                for key in ("pa_permanent", "pa_rough", "pa_temporary", "pa_tilled"):
+                    if key in raw:
+                        part += f", {key[3:]} {raw[key][win][good].astype(np.float32).mean():.0%}"
+                if "pl_recent" in raw:
+                    part += f", ploughed-map {raw['pl_recent'][win][good].astype(np.float32).mean():.0%}"
+                part += "]"
+            msg.append(part)
         log.info("; ".join(msg))
 
 
@@ -137,10 +151,15 @@ def process_region(region, species, out_dir, cache_dir):
                     "median_age_days": int(np.median(ages)) if ages.size else None}
     bare_info = None
     if "bare_frac" in layers:
-        bare = layers["bare_frac"].astype(np.float32)
-        render.save_png(np.nan_to_num(bare), os.path.join(rdir, "wx", "bare.png"))
-        bare_info = {"built": str(layers.get("bare_built", "")), "coverage": round(float(np.isfinite(bare).mean()), 3)}
-        bare_check(region, layers, grid, terr, species)
+        raw = dict(layers)
+        used, bauc, bref = hab_mod.bare_gate(layers)
+        log.info(f"{rid}: bare-soil check separates arable from pasture ({bref}) with AUC "
+                 f"{bauc if bauc is None else round(bauc, 2)} -> {'USED' if used else 'not used here'}")
+        bare_info = {"built": str(raw.get("bare_built", "")), "used": used,
+                     "auc": None if bauc is None else round(bauc, 3)}
+        if used:
+            render.save_png(np.nan_to_num(raw["bare_frac"].astype(np.float32)), os.path.join(rdir, "wx", "bare.png"))
+        bare_check(region, raw, layers, grid, terr, species)
     recs = load_sightings(region, species, cache_dir)
     with open(os.path.join(rdir, "sightings.json"), "w") as f:
         json.dump(recs, f, separators=(",", ":"))

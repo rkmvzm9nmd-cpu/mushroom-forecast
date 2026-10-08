@@ -125,6 +125,7 @@ def fit_habitat(region, species, cache_dir):
     rid = region["id"]
     grid = Grid.from_bbox(region["bbox"], region.get("zoom", 10))
     layers = static_layers.load_all(region, grid, cache_dir)
+    hab_mod.bare_gate(layers)          # same tilled-field rule as the daily run
     terr = hab_mod.terrain(layers["elev"], grid)
     sat_wet = satellite.relative_wetness(layers["ndmi"], layers) if "ndmi" in layers else None
     shared = features.smooth(features.shared_features(layers, terr, sat_wet, grid.shape))
