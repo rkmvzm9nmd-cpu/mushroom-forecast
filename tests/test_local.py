@@ -44,7 +44,12 @@ def fake_groups():
         grass = lc(r, g, w)["lc_grass"].astype(np.float32)
         return {"pa_hist_perm": (grass * 0.4).astype(np.float16), "pa_hist_year": np.array(2015)}
 
-    return {"dem": (1, dem), "lc": (1, lc), "ph": (2, ph), "bdforet": (1, bdf), "rpg": (3, rpg), "rpg_hist": (1, hist)}
+    def ndmi(r, g, w):
+        rng = np.random.default_rng(1)
+        return {"ndmi": rng.normal(0.2, 0.1, g.shape).astype(np.float16),
+                "ndmi_age": np.full(g.shape, 5, np.uint8), "ndmi_built": np.array("2026-10-08")}
+
+    return {"ndmi": (1, ndmi, 5), "dem": (1, dem), "lc": (1, lc), "ph": (2, ph), "bdforet": (1, bdf), "rpg": (3, rpg), "rpg_hist": (1, hist)}
 
 
 def fake_fetch(bbox, spacing, tz, batch=25, past_days=31):
@@ -86,6 +91,7 @@ with tempfile.TemporaryDirectory() as tmp:
         run.main()
     meta = json.load(open(os.path.join(tmp, "site/data/massif-central-alps/meta.json")))
     ro = json.load(open(os.path.join(tmp, "site/data/brasov-fagaras/meta.json")))
+    print("satellite", ro["satellite_wetness"], {k: (v.get("auc"), v.get("auc_with_satellite"), v.get("satellite_used")) for k, v in ro["validation"].items()})
     print("romania sources", ro["sources"], "dates", ro["dates"][:2], "soil", ro["soil_date"])
     assert os.path.exists(os.path.join(tmp, "site/data/brasov-fagaras/wx/soil.png"))
     import pipeline.habitat as H

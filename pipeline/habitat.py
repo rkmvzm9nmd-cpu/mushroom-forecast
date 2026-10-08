@@ -104,7 +104,7 @@ def _forest_host(hab, layers, shape):
     return np.clip(total, 0, 1)
 
 
-def habitat(sp, layers, grid: Grid, terr=None):
+def habitat(sp, layers, grid: Grid, terr=None, sat_wet=None):
     shape = grid.shape
     slope, damp = terr if terr is not None else terrain(layers["elev"], grid)
     hab = sp["habitat"]
@@ -114,6 +114,9 @@ def habitat(sp, layers, grid: Grid, terr=None):
         np.where(np.isnan(ph), 0.8, trapezoid(ph, *hab["ph"]))
     elev = layers["elev"]
     elev_f = np.where(np.isnan(elev), 1.0, trapezoid(elev, *hab["elev"]))
+    if sat_wet is not None:
+        # blend terrain dampness with satellite-measured relative wetness where available
+        damp = np.where(np.isfinite(sat_wet), 0.5 * damp + 0.5 * np.nan_to_num(sat_wet), damp)
     w = hab.get("damp", 0.3)
     damp_f = 1.0 - w * (1.0 - damp)
     steep = (22, 40) if hab["host"] == "grass" else (30, 45)

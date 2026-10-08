@@ -173,6 +173,7 @@
       L.circleMarker([p.lat, p.lon], { radius: 4, color: "#14160f", weight: 1, fillColor: "#f2efe6", fillOpacity: 1 })
         .bindTooltip(p.name, { permanent: true, direction: "right", className: "" }).addTo(placesLayer);
     renderSightings();
+    renderSatWet();
     store.set("mf_overlays", S.overlays);
   }
   const placesLayer = L.layerGroup().addTo(map);
@@ -278,11 +279,12 @@
       <h3>Where and when</h3><p>${esc(s.notes)}</p>
       <h3>Look-alikes</h3><p>${esc(s.lookalikes)}</p>
       <h3>Model check</h3><p>Habitat map ranks real recorded finds above random ground: <b>${auc}</b>.</p>
+      ${v.auc_with_satellite != null ? `<p class="note">With satellite wetness added: ${Math.round(v.auc_with_satellite * 100)}% — ${v.satellite_used ? "better, so it is switched on for this species." : "no clear gain, so it is not used for this species."}</p>` : ""}
       <h3>How to read the map</h3>
       <p class="note"><b>Likelihood</b> = habitat × recent weather. <b>Habitat</b> = tree species or pasture type (old pasture vs re-sown), soil acidity, altitude and damp ground.
       <b>Weather</b> = rain in the right window before the date, temperature, frost, and (for the next few days) satellite-measured soil wetness. Grassland also loses score where satellites saw recent ploughing or frequent silage cuts. Colours show odds, not certainty.</p>
       <p class="warn">Never eat a mushroom on the strength of this map. Get every find checked by an expert (French pharmacists and local mycological societies do this for free). Check local picking limits and ask before entering farmland.</p>
-      <p class="note">Data: Open-Meteo, Copernicus (soil water index, grassland ploughing & mowing), IGN BD Forêt & RPG farm parcels, ForestPaths tree genera, ESA WorldCover, Copernicus DEM, INRAE/GIS Sol & ISRIC SoilGrids soil pH, GBIF. <a href="data/status.json" style="color:inherit">Build log</a>.</p>`);
+      <p class="note">Data: Open-Meteo, Copernicus (soil water index, grassland ploughing & mowing, Sentinel-2), IGN BD Forêt & RPG farm parcels, ForestPaths tree genera, ESA WorldCover, Copernicus DEM, INRAE/GIS Sol & ISRIC SoilGrids soil pH, GBIF. <a href="data/status.json" style="color:inherit">Build log</a>.</p>`);
   }
   $("infoBtn").onclick = showInfo;
 
@@ -369,6 +371,7 @@
   function showLayers() {
     const bases = Object.entries(BASES).map(([k, b]) => `<label class="opt"><input type="radio" name="base" value="${k}" ${k === S.base ? "checked" : ""}>${esc(b.name)}</label>`).join("");
     const ovs = [["sightings", "Recorded finds (GBIF, this species)"], ["places", "Reference places"],
+      ...(S.meta.satellite_wetness ? [["satwet", "Satellite wetness (Sentinel-2, blue = wetter)"]] : []),
       ...Object.entries(OVERLAYS).map(([k, o]) => [k, o.name])]
       .map(([k, n]) => `<label class="opt"><input type="checkbox" data-ov="${k}" ${S.overlays[k] ? "checked" : ""}>${esc(n)}</label>`).join("");
     const regions = S.index.regions.length > 1 ? `<h3>Region</h3>` + S.index.regions.map((r) =>
@@ -384,6 +387,17 @@
   }
   $("layersBtn").dataset.kind = "layers";
   $("layersBtn").onclick = () => (sheetKind === "layers" ? closeSheet() : showLayers());
+
+  // --- satellite wetness overlay
+  let satOverlay = null;
+  async function renderSatWet() {
+    if (satOverlay) { map.removeLayer(satOverlay); satOverlay = null; }
+    if (!S.overlays.satwet || !S.meta || !S.meta.satellite_wetness) return;
+    try {
+      const url = await colourise(await loadGray(`${S.meta.id}/wx/satwet.png`), LUTS.rain);
+      satOverlay = L.imageOverlay(url, overlayBounds(false), { opacity: 0.6, interactive: false }).addTo(map);
+    } catch { toast("Satellite wetness not available"); }
+  }
 
   // --- sightings
   async function renderSightings() {
@@ -411,6 +425,8 @@
     let rain = null, hab = null;
     try { if (weather) rain = sampleAt(await loadGray(layerPath("rain", null, day)), lat, lng, true); } catch { /* */ }
     try { hab = sampleAt(await loadGray(layerPath("habitat", S.species)), lat, lng); } catch { /* */ }
+    let satw = null;
+    try { if (S.meta.satellite_wetness) satw = sampleAt(await loadGray(`${S.meta.id}/wx/satwet.png`), lat, lng); } catch { /* */ }
     let soil = null;
     try { if (S.meta.soil_date) soil = sampleAt(await loadGray(layerPath("soil")), lat, lng, true); } catch { /* */ }
     const outside = rows.every(([, v]) => v == null);
@@ -421,7 +437,7 @@
     popup.setContent(`
       <div class="pop-title">${label}</div>
       <div class="pop-grid">${rows.map(([s, v]) => `<span>${esc(s.name)}</span><span class="v">${pct(v)}</span>`).join("")}</div>
-      <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}${soil != null ? ` · soil wetness (satellite, ${esc(S.meta.soil_date)}): ${Math.round(soil * 100)}%` : ""}</div>
+      <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}${soil != null ? ` · soil wetness (satellite, ${esc(S.meta.soil_date)}): ${Math.round(soil * 100)}%` : ""}${satw ? ` · vegetation wetter than ${Math.round(satw * 100)}% of similar ground (Sentinel-2)` : ""}</div>
       ${outlookHtml}
       <div class="btns"><button class="btn primary" id="saveHere">Save spot</button><a class="btn" href="${navUrl(lat.toFixed(5), lng.toFixed(5))}" target="_blank" rel="noopener">Directions</a></div>`);
     const saveBtn = document.getElementById("saveHere");

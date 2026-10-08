@@ -15,13 +15,14 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import yaml
 
-from . import archive, alerts, soil_moisture, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
+from . import archive, alerts, satellite, soil_moisture, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
 from .grid import Grid, downsample, upsample
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GOOD = 0.4          # score counted as "good" in stats and alerts
 HALF = 2            # weather is modelled at half resolution then smoothed up
 GBIF_MAX_AGE_DAYS = 7
+MIN_FINDS = 15      # records needed before the satellite layer may change a species' habitat
 ARCHIVE_DIR = os.environ.get("WEATHER_ARCHIVE", os.path.join(ROOT, "archive"))
 
 
@@ -64,19 +65,44 @@ def process_region(region, species, out_dir, cache_dir):
 
     layers = static_layers.load_all(region, grid, cache_dir)
     terr = hab_mod.terrain(layers["elev"], grid)
-    H = {}
-    for sp in species:
-        H[sp["id"]] = hab_mod.habitat(sp, layers, grid, terr)
-        render.save_png(H[sp["id"]], os.path.join(rdir, "habitat", f"{sp['id']}.png"))
-
-    # --- sightings + validation
+    sat_wet, sat_info = None, None
+    if "ndmi" in layers:
+        sat_wet = satellite.relative_wetness(layers["ndmi"], layers)
+        render.save_png(np.nan_to_num(sat_wet), os.path.join(rdir, "wx", "satwet.png"))
+        ages = layers["ndmi_age"][layers["ndmi_age"] < 255]
+        sat_info = {"built": str(layers.get("ndmi_built", "")),
+                    "coverage": round(float(np.isfinite(sat_wet).mean()), 3),
+                    "median_age_days": int(np.median(ages)) if ages.size else None}
     recs = load_sightings(region, species, cache_dir)
-    rng = np.random.default_rng(42)
-    validation = {sid: sightings.validate(recs.get(sid, []), H[sid], grid, rng) for sid in H}
     with open(os.path.join(rdir, "sightings.json"), "w") as f:
         json.dump(recs, f, separators=(",", ":"))
+
+    # habitat per species; satellite wetness is only switched on for a species when it
+    # makes the model rank real recorded finds better (needs >= MIN_FINDS records)
+    H, validation = {}, {}
+    for sp in species:
+        sid = sp["id"]
+        base = hab_mod.habitat(sp, layers, grid, terr)
+        v = sightings.validate(recs.get(sid, []), base, grid, np.random.default_rng(42))
+        chosen = base
+        if sat_wet is not None:
+            alt = hab_mod.habitat(sp, layers, grid, terr, sat_wet)
+            va = sightings.validate(recs.get(sid, []), alt, grid, np.random.default_rng(42))
+            v["auc_with_satellite"] = va.get("auc")
+            use = (v["n"] >= MIN_FINDS and v.get("auc") is not None and va.get("auc") is not None
+                   and va["auc"] >= v["auc"] + 0.01)
+            v["satellite_used"] = bool(use)
+            if use:
+                chosen = alt
+        H[sid] = chosen
+        validation[sid] = v
+        render.save_png(chosen, os.path.join(rdir, "habitat", f"{sid}.png"))
     log.info("habitat check vs GBIF finds (AUC, 0.5 = no skill): " + ", ".join(
         f"{k} {v.get('auc')} (n={v['n']})" for k, v in validation.items()))
+    if sat_wet is not None:
+        log.info("with satellite wetness: " + ", ".join(
+            f"{k} {v.get('auc_with_satellite')}{' -> USED' if v.get('satellite_used') else ''}"
+            for k, v in validation.items()))
 
     # --- weather
     tz = region.get("timezone", "UTC")
@@ -147,7 +173,7 @@ def process_region(region, species, out_dir, cache_dir):
     meta = {
         "id": rid, "name": region["name"], "generated": dt.datetime.now(ZoneInfo(tz)).isoformat(timespec="minutes"),
         "grid": grid.to_json(), "half": HALF, "dates": dates, "weather_ok": weather_ok,
-        "soil_date": soil_date,
+        "soil_date": soil_date, "satellite_wetness": sat_info,
         "places": region.get("places", []), "good_threshold": GOOD,
         "stats": stats, "hotspots": spots, "validation": validation,
         "sources": {"tree_species": (None if not all(("ft_" + k) in layers for k in static_layers.FOREST_TYPES)

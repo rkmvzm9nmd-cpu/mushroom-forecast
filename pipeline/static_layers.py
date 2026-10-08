@@ -19,7 +19,7 @@ import unicodedata
 import numpy as np
 import requests
 
-from . import log
+from . import log, satellite
 from .grid import Grid, block_mean
 
 UA = {"User-Agent": "mushroom-forecast (github.com/rkmvzm9nmd-cpu/mushroom-forecast)"}
@@ -527,6 +527,7 @@ GROUPS = {
     "rpg_hist": (1, lambda r, g, w: rpg_history(g)),
     "forest_eu": (1, lambda r, g, w: forest_eu(g, w)),
     "plough": (2, grassland_use),
+    "ndmi": (1, lambda r, g, w: satellite.ndmi_composite(r, g, w), 5),   # refreshed every 5 days
 }
 FRANCE_ONLY = {"bdforet", "rpg", "rpg_hist"}
 OUTSIDE_FRANCE = {"forest_eu"}
@@ -556,22 +557,33 @@ def load_all(region, grid: Grid, cache_dir):
     _migrate_v1(region, cache_dir, rdir)
     layers = {}
     france = region.get("country") == "FR"
-    for g, (ver, fn) in GROUPS.items():
+    for g, spec in GROUPS.items():
+        ver, fn = spec[0], spec[1]
+        max_age = spec[2] if len(spec) > 2 else None   # days; None = keep forever
         if (g in FRANCE_ONLY and not france) or (g in OUTSIDE_FRANCE and france):
             continue
         path = os.path.join(rdir, g + ".npz")
+        stale = None
         if os.path.exists(path):
             with np.load(path) as z:
                 if int(z["_v"]) == ver and tuple(z["_shape"]) == grid.shape:
-                    layers.update({k: z[k] for k in z.files if not k.startswith("_")})
-                    continue
-        log.info(f"{region['id']}: building layer group '{g}'")
+                    cached = {k: z[k] for k in z.files if not k.startswith("_")}
+                    built = float(z["_built"]) if "_built" in z.files else 0.0
+                    if max_age is None or (time.time() - built) / 86400 < max_age:
+                        layers.update(cached)
+                        continue
+                    stale = cached
+        log.info(f"{region['id']}: building layer group '{g}'" + (" (refresh)" if stale else ""))
         try:
             got = fn(region, grid, rdir)
-            np.savez_compressed(path, _v=ver, _shape=grid.shape, **got)
+            np.savez_compressed(path, _v=ver, _shape=grid.shape, _built=time.time(), **got)
             layers.update(got)
         except Exception as exc:
-            if "not set" in str(exc):
+            if stale is not None:
+                log.warn(f"layer group '{g}' refresh failed, keeping previous version: "
+                         f"{exc.__class__.__name__}: {str(exc)[:160]}")
+                layers.update(stale)
+            elif "not set" in str(exc):
                 log.info(f"layer group '{g}' skipped: {exc}")
             else:
                 log.error(f"layer group '{g}' failed (will retry next run)", exc)
