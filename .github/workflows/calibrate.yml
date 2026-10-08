@@ -64,3 +64,15 @@ jobs:
           git commit -qm "Calibration $(date -u +%F)" || exit 0
           git pull -q --rebase origin main
           git push -q origin HEAD:main
+
+      - name: Publish calibration log (for checking)
+        if: always()
+        run: |
+          mkdir -p /tmp/clog && cp -r calibration/. /tmp/clog/ 2>/dev/null || true
+          cd /tmp/clog
+          [ -n "$(ls -A)" ] || exit 0
+          git init -q -b calibration-log
+          git add -A
+          git -c user.name="forecast-bot" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "Calibration log $(date -u +%FT%TZ)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" calibration-log

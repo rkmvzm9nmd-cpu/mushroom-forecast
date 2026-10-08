@@ -431,5 +431,21 @@ def _f(x):
     return "-" if x is None else f"{x:.2f}"
 
 
+def _main_logged():
+    out = os.path.join(R.ROOT, "calibration")
+    for i, a in enumerate(os.sys.argv):
+        if a == "--out" and i + 1 < len(os.sys.argv):
+            out = os.sys.argv[i + 1]
+    try:
+        main()
+    except Exception as exc:
+        log.error("calibration failed", exc)
+        raise
+    finally:
+        os.makedirs(out, exist_ok=True)
+        with open(os.path.join(out, "log.json"), "w") as f:
+            json.dump(log.ENTRIES, f, indent=1, ensure_ascii=False)
+
+
 if __name__ == "__main__":
-    main()
+    _main_logged()
