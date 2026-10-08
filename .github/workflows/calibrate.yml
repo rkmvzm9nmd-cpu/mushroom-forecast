@@ -9,13 +9,13 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["pipeline/calibrate.py", "pipeline/features.py"]
+    paths: ["pipeline/calibrate.py", "pipeline/features.py", ".github/workflows/calibrate.yml"]
 
 permissions:
   contents: write
 
 concurrency:
-  group: forecast
+  group: calibrate
   cancel-in-progress: false
 
 jobs:
@@ -41,30 +41,19 @@ jobs:
           restore-keys: |
             static-v2-
 
-      - name: Restore weather archive (incl. history cache)
-        run: |
-          mkdir -p archive
-          if git fetch --depth=1 origin weather-archive 2>/dev/null; then
-            git archive FETCH_HEAD | tar -x -C archive
-          fi
+      - name: Restore weather history cache
+        uses: actions/cache@v4
+        with:
+          path: history
+          key: history-${{ github.run_id }}
+          restore-keys: |
+            history-
 
       - name: Calibrate
         env:
           CDSE_S3_KEY: ${{ secrets.CDSE_S3_KEY }}
           CDSE_S3_SECRET: ${{ secrets.CDSE_S3_SECRET }}
-          WEATHER_ARCHIVE: archive
-        run: python -m pipeline.calibrate --cache cache/static --out calibration --history archive/history
-
-      - name: Save history cache to weather-archive branch
-        if: always()
-        run: |
-          cd archive
-          [ -n "$(ls -A)" ] || exit 0
-          git init -q -b weather-archive
-          git add -A
-          git -c user.name="forecast-bot" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -qm "Weather archive + history $(date -u +%F)"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" weather-archive
+        run: python -m pipeline.calibrate --cache cache/static --out calibration --history history
 
       - name: Commit calibration
         if: success()
