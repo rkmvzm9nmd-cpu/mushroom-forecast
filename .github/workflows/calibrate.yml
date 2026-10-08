@@ -1,0 +1,77 @@
+name: Calibrate
+
+# Learns habitat weights, timing and season from public records (see pipeline/calibrate.py).
+# Runs monthly, on demand, and when the calibration code changes. Results are committed to
+# calibration/ and picked up by the next daily forecast.
+on:
+  schedule:
+    - cron: "41 1 2 * *"     # 2nd of each month
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["pipeline/calibrate.py", "pipeline/features.py"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: forecast
+  cancel-in-progress: false
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt scikit-learn
+
+      - name: Restore static habitat layers
+        uses: actions/cache/restore@v4
+        with:
+          path: cache/static
+          key: static-v2-none
+          restore-keys: |
+            static-v2-
+
+      - name: Restore weather archive (incl. history cache)
+        run: |
+          mkdir -p archive
+          if git fetch --depth=1 origin weather-archive 2>/dev/null; then
+            git archive FETCH_HEAD | tar -x -C archive
+          fi
+
+      - name: Calibrate
+        env:
+          CDSE_S3_KEY: ${{ secrets.CDSE_S3_KEY }}
+          CDSE_S3_SECRET: ${{ secrets.CDSE_S3_SECRET }}
+          WEATHER_ARCHIVE: archive
+        run: python -m pipeline.calibrate --cache cache/static --out calibration --history archive/history
+
+      - name: Save history cache to weather-archive branch
+        if: always()
+        run: |
+          cd archive
+          [ -n "$(ls -A)" ] || exit 0
+          git init -q -b weather-archive
+          git add -A
+          git -c user.name="forecast-bot" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "Weather archive + history $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" weather-archive
+
+      - name: Commit calibration
+        if: success()
+        run: |
+          git config user.name "forecast-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add calibration
+          git commit -qm "Calibration $(date -u +%F)" || exit 0
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main

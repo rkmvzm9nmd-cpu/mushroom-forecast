@@ -279,6 +279,11 @@
       <h3>Where and when</h3><p>${esc(s.notes)}</p>
       <h3>Look-alikes</h3><p>${esc(s.lookalikes)}</p>
       <h3>Model check</h3><p>Habitat map ranks real recorded finds above random ground: <b>${auc}</b>.</p>
+      ${v.cal_auc_rules != null ? `<p class="note">Fair test against where mushroom recorders actually go: rules ${Math.round(v.cal_auc_rules * 100)}%${v.cal_auc_learned != null ? `, learned model ${Math.round(v.cal_auc_learned * 100)}%` : ""}.</p>` : ""}
+      <p class="note">${[v.learned_habitat ? "Habitat weights <b>learned</b> from local finds" : "Habitat from expert rules",
+        v.learned_timing ? "timing after rain <b>learned</b> from dated finds" : "timing from expert rules",
+        v.learned_season ? "season <b>learned</b> from local records" : "season from expert rules"].join(" · ")}.</p>
+      ${v.learned_habitat && v.top_factors ? `<p class="note">Strongest factors: ${v.top_factors.slice(0, 4).map((t) => `${esc(t.feature.replace(/^(ft_|lc_|pa_|pl_)/, "").replace(/_/g, " "))} ${t.weight > 0 ? "+" : "−"}`).join(", ")}</p>` : ""}
       ${v.auc_with_satellite != null ? `<p class="note">With satellite wetness added: ${Math.round(v.auc_with_satellite * 100)}% — ${v.satellite_used ? "better, so it is switched on for this species." : "no clear gain, so it is not used for this species."}</p>` : ""}
       <h3>How to read the map</h3>
       <p class="note"><b>Likelihood</b> = habitat × recent weather. <b>Habitat</b> = tree species or pasture type (old pasture vs re-sown), soil acidity, altitude and damp ground.

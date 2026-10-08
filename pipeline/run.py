@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import yaml
 
-from . import archive, alerts, satellite, soil_moisture, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
+from . import archive, alerts, features, satellite, soil_moisture, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
 from .grid import Grid, downsample, upsample
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,6 +24,37 @@ HALF = 2            # weather is modelled at half resolution then smoothed up
 GBIF_MAX_AGE_DAYS = 7
 MIN_FINDS = 15      # records needed before the satellite layer may change a species' habitat
 ARCHIVE_DIR = os.environ.get("WEATHER_ARCHIVE", os.path.join(ROOT, "archive"))
+
+
+def load_calibration():
+    p = os.path.join(ROOT, "calibration", "calibration.json")
+    if not os.path.exists(p):
+        return {}
+    try:
+        with open(p) as f:
+            return json.load(f)
+    except Exception as exc:
+        log.warn(f"calibration file unreadable: {exc}")
+        return {}
+
+
+CAL = {}
+
+
+def effective_species(sp, country):
+    """Species settings with learned timing / season applied where calibration says so."""
+    import copy
+    out = copy.deepcopy(sp)
+    learned = {}
+    t = CAL.get("timing", {}).get(country, {}).get(sp["id"], {})
+    if t.get("use") and t.get("params"):
+        out["weather"].update(t["params"])
+        learned["timing"] = True
+    s = CAL.get("season", {}).get(country, {}).get(sp["id"], {})
+    if s.get("use") and s.get("weights"):
+        out["weather"]["season"] = s["weights"]
+        learned["season"] = True
+    return out, learned
 
 
 def load_yaml(name):
@@ -80,12 +111,23 @@ def process_region(region, species, out_dir, cache_dir):
     # habitat per species; satellite wetness is only switched on for a species when it
     # makes the model rank real recorded finds better (needs >= MIN_FINDS records)
     H, validation = {}, {}
+    shared = None
+    hab_cal = CAL.get("habitat", {}).get(rid, {})
     for sp in species:
         sid = sp["id"]
         base = hab_mod.habitat(sp, layers, grid, terr)
         v = sightings.validate(recs.get(sid, []), base, grid, np.random.default_rng(42))
         chosen = base
-        if sat_wet is not None:
+        hc = hab_cal.get(sid, {})
+        v["learned_habitat"] = False
+        if hc.get("use") and hc.get("model"):
+            # learned model (tested better than the rules against real finds)
+            if shared is None:
+                shared = features.shared_features(layers, terr, sat_wet, grid.shape)
+            chosen = features.predict(hc["model"], base, shared)
+            v["learned_habitat"] = True
+            v["auc_learned"] = sightings.validate(recs.get(sid, []), chosen, grid, np.random.default_rng(42)).get("auc")
+        elif sat_wet is not None:
             alt = hab_mod.habitat(sp, layers, grid, terr, sat_wet)
             va = sightings.validate(recs.get(sid, []), alt, grid, np.random.default_rng(42))
             v["auc_with_satellite"] = va.get("auc")
@@ -94,6 +136,12 @@ def process_region(region, species, out_dir, cache_dir):
             v["satellite_used"] = bool(use)
             if use:
                 chosen = alt
+        # calibration summary for the info panel (target-group tests)
+        for k_src, k_dst in (("auc_rule", "cal_auc_rules"), ("auc_fit_cv", "cal_auc_learned")):
+            if hc.get(k_src) is not None:
+                v[k_dst] = round(hc[k_src], 3)
+        if hc.get("top_factors"):
+            v["top_factors"] = hc["top_factors"]
         H[sid] = chosen
         validation[sid] = v
         render.save_png(chosen, os.path.join(rdir, "habitat", f"{sid}.png"))
@@ -146,7 +194,10 @@ def process_region(region, species, out_dir, cache_dir):
             render.save_png(scoring.rain_window(P, t), os.path.join(rdir, "rain", f"{d}.png"),
                             scale=255.0 / 100.0)  # 0..100 mm over 14 days
         for sp in species:
-            Ws = scoring.weather_scores(sp, P, Tmin, Tmax, all_dates, day_idx, dry, soil, soil_w)
+            sp_eff, learned = effective_species(sp, region.get("country", "XX"))
+            validation[sp["id"]]["learned_timing"] = bool(learned.get("timing"))
+            validation[sp["id"]]["learned_season"] = bool(learned.get("season"))
+            Ws = scoring.weather_scores(sp_eff, P, Tmin, Tmax, all_dates, day_idx, dry, soil, soil_w)
             scores[sp["id"]] = []
             for d, W in enumerate(Ws):
                 render.save_png(W, os.path.join(rdir, "wx", f"{sp['id']}_{d}.png"))
@@ -208,6 +259,9 @@ def main():
 
     regions = load_yaml("regions.yaml")["regions"]
     species = load_yaml("species.yaml")["species"]
+    CAL.update(load_calibration())
+    if CAL:
+        log.info(f"using calibration from {CAL.get('generated')}")
     started = time.time()
     results, index = [], []
     for region in regions:

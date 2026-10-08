@@ -6,6 +6,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+  workflow_run:            # re-run the forecast once a new calibration has been committed
+    workflows: [Calibrate]
+    types: [completed]
 
 permissions:
   contents: write   # to save the rolling weather archive branch
