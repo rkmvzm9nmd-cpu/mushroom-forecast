@@ -432,6 +432,8 @@
     try { hab = sampleAt(await loadGray(layerPath("habitat", S.species)), lat, lng); } catch { /* */ }
     let satw = null;
     try { if (S.meta.satellite_wetness) satw = sampleAt(await loadGray(`${S.meta.id}/wx/satwet.png`), lat, lng); } catch { /* */ }
+    let bare = null;
+    try { if (S.meta.bare_soil) bare = sampleAt(await loadGray(`${S.meta.id}/wx/bare.png`), lat, lng); } catch { /* */ }
     let soil = null;
     try { if (S.meta.soil_date) soil = sampleAt(await loadGray(layerPath("soil")), lat, lng, true); } catch { /* */ }
     const outside = rows.every(([, v]) => v == null);
@@ -442,7 +444,7 @@
     popup.setContent(`
       <div class="pop-title">${label}</div>
       <div class="pop-grid">${rows.map(([s, v]) => `<span>${esc(s.name)}</span><span class="v">${pct(v)}</span>`).join("")}</div>
-      <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}${soil != null ? ` · soil wetness (satellite, ${esc(S.meta.soil_date)}): ${Math.round(soil * 100)}%` : ""}${satw ? ` · vegetation wetter than ${Math.round(satw * 100)}% of similar ground (Sentinel-2)` : ""}</div>
+      <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}${soil != null ? ` · soil wetness (satellite, ${esc(S.meta.soil_date)}): ${Math.round(soil * 100)}%` : ""}${satw ? ` · vegetation wetter than ${Math.round(satw * 100)}% of similar ground (Sentinel-2)` : ""}${bare != null ? ` · bare soil in ${Math.round(bare * 100)}% of clear spring/autumn satellite views${bare >= 0.1 ? " (likely tilled recently)" : ""}` : ""}</div>
       ${outlookHtml}
       <div class="btns"><button class="btn primary" id="saveHere">Save spot</button><a class="btn" href="${navUrl(lat.toFixed(5), lng.toFixed(5))}" target="_blank" rel="noopener">Directions</a></div>`);
     const saveBtn = document.getElementById("saveHere");

@@ -49,7 +49,13 @@ def fake_groups():
         return {"ndmi": rng.normal(0.2, 0.1, g.shape).astype(np.float16),
                 "ndmi_age": np.full(g.shape, 5, np.uint8), "ndmi_built": np.array("2026-10-08")}
 
-    return {"ndmi": (1, ndmi, 5), "dem": (1, dem), "lc": (1, lc), "ph": (2, ph), "bdforet": (1, bdf), "rpg": (3, rpg), "rpg_hist": (1, hist)}
+    def bare(r, g, w):
+        grass = lc(r, g, w)["lc_grass"].astype(np.float32)
+        h, wd = g.shape
+        tilled = (np.mgrid[0:h, 0:wd][0] < h // 3) * grass       # top third of the grass "was tilled"
+        return {"bare_frac": (0.5 * tilled).astype(np.float16), "bare_built": np.array("2026-10-08")}
+
+    return {"bare_soil": (1, bare, 30), "ndmi": (1, ndmi, 5), "dem": (1, dem), "lc": (1, lc), "ph": (2, ph), "bdforet": (1, bdf), "rpg": (3, rpg), "rpg_hist": (1, hist)}
 
 
 def fake_fetch(bbox, spacing, tz, batch=25, past_days=31):

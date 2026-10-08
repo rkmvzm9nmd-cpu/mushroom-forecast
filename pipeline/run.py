@@ -86,6 +86,37 @@ def load_sightings(region, species, cache_dir):
         return {}
 
 
+def bare_check(region, layers, grid, terr, species):
+    """Log how the bare-soil (tillage) check behaves: on declared pasture vs declared arable
+    land (France), and how much grassland habitat it removes, region-wide and near each place."""
+    bare = layers["bare_frac"].astype(np.float32)
+    if "pa_permanent" in layers and "pa_tilled" in layers:
+        for lab, key in (("declared permanent pasture", "pa_permanent"), ("declared arable", "pa_tilled")):
+            m = (layers[key].astype(np.float32) > 0.7) & np.isfinite(bare)
+            if m.sum() > 20:
+                v = bare[m]
+                log.info(f"bare soil on {lab}: mean {v.mean():.2f}, >=10% in {np.mean(v >= 0.10):.0%}, "
+                         f">=35% in {np.mean(v >= 0.35):.0%} of {int(m.sum())} pixels")
+    cell_km2 = float(np.mean((grid.res * np.cos(np.radians(grid.cell_lonlat()[1]))) ** 2)) / 1e6
+    no_bare = {k: v for k, v in layers.items() if k != "bare_frac"}
+    for sp in species:
+        if sp["habitat"]["host"] != "grass":
+            continue
+        before = hab_mod.habitat(sp, no_bare, grid, terr)
+        after = hab_mod.habitat(sp, layers, grid, terr)
+        lost = (before >= GOOD) & (after < GOOD)
+        msg = [f"{sp['id']}: bare-soil check removes {lost.sum() * cell_km2:.1f} of "
+               f"{(before >= GOOD).sum() * cell_km2:.1f} km2 of good habitat"]
+        for pl in region.get("places", []):
+            r, c = grid.lonlat_to_cell(pl["lon"], pl["lat"])
+            r, c, k = int(r), int(c), int(round(3000 / (grid.res * np.cos(np.radians(pl["lat"])))))
+            win = (slice(max(r - k, 0), r + k + 1), slice(max(c - k, 0), c + k + 1))
+            b = (before[win] >= GOOD).sum()
+            if b:
+                msg.append(f"{pl['name']} (3 km): {lost[win].sum()}/{b} px")
+        log.info("; ".join(msg))
+
+
 def process_region(region, species, out_dir, cache_dir):
     rid = region["id"]
     grid = Grid.from_bbox(region["bbox"], region.get("zoom", 10))
@@ -104,6 +135,12 @@ def process_region(region, species, out_dir, cache_dir):
         sat_info = {"built": str(layers.get("ndmi_built", "")),
                     "coverage": round(float(np.isfinite(sat_wet).mean()), 3),
                     "median_age_days": int(np.median(ages)) if ages.size else None}
+    bare_info = None
+    if "bare_frac" in layers:
+        bare = layers["bare_frac"].astype(np.float32)
+        render.save_png(np.nan_to_num(bare), os.path.join(rdir, "wx", "bare.png"))
+        bare_info = {"built": str(layers.get("bare_built", "")), "coverage": round(float(np.isfinite(bare).mean()), 3)}
+        bare_check(region, layers, grid, terr, species)
     recs = load_sightings(region, species, cache_dir)
     with open(os.path.join(rdir, "sightings.json"), "w") as f:
         json.dump(recs, f, separators=(",", ":"))
@@ -224,7 +261,7 @@ def process_region(region, species, out_dir, cache_dir):
     meta = {
         "id": rid, "name": region["name"], "generated": dt.datetime.now(ZoneInfo(tz)).isoformat(timespec="minutes"),
         "grid": grid.to_json(), "half": HALF, "dates": dates, "weather_ok": weather_ok,
-        "soil_date": soil_date, "satellite_wetness": sat_info,
+        "soil_date": soil_date, "satellite_wetness": sat_info, "bare_soil": bare_info,
         "places": region.get("places", []), "good_threshold": GOOD,
         "stats": stats, "hotspots": spots, "validation": validation,
         "sources": {"tree_species": (None if not any(("ft_" + k) in layers for k in static_layers.FOREST_TYPES)

@@ -40,20 +40,35 @@ def host_score(sp, layers, shape):
     return _forest_host(hab, layers, shape)
 
 
+def bare_factor(pk, layers):
+    """Sentinel-2: share of clear spring/autumn views showing bare soil. Old pasture stays
+    green then; tilled fields do not. 10% or less = no penalty, 35% or more = full penalty."""
+    if not pk or "bare" not in pk or "bare_frac" not in layers:
+        return 1.0
+    frac = np.nan_to_num(layers["bare_frac"].astype(np.float32), nan=0.0)
+    seen = np.clip((frac - BARE_FROM) / (BARE_FULL - BARE_FROM), 0, 1)
+    return 1.0 - (1.0 - pk["bare"]) * seen
+
+
+BARE_FROM, BARE_FULL = 0.10, 0.35
+
+
 def _plough_factor(hab, layers):
     """Copernicus ploughing indicator (Europe-wide): grassland ploughed in the last
-    0-2 years, or 3-6 years, or whose cover changed, keeps only part of its score."""
+    0-2 years, or 3-6 years, or whose cover changed, keeps only part of its score.
+    Then the Sentinel-2 bare-soil check catches tillage since the indicator's last year."""
     pk = hab.get("ploughed")
-    if not pk or "pl_recent" not in layers:
+    if not pk:
         return 1.0
     f = 1.0
-    f = f - (1 - pk.get("recent", 1.0)) * layers["pl_recent"].astype(np.float32)
-    f = f - (1 - pk.get("mid", 1.0)) * layers["pl_mid"].astype(np.float32)
-    f = f - (1 - pk.get("changed", 1.0)) * layers["pl_changed"].astype(np.float32)
+    if "pl_recent" in layers:
+        f = f - (1 - pk.get("recent", 1.0)) * layers["pl_recent"].astype(np.float32)
+        f = f - (1 - pk.get("mid", 1.0)) * layers["pl_mid"].astype(np.float32)
+        f = f - (1 - pk.get("changed", 1.0)) * layers["pl_changed"].astype(np.float32)
     if "mw_many" in layers:  # cut 3+ times a year = intensive silage grass
         f = f - (1 - pk.get("mown_twice", 1.0)) * layers["mw_two"].astype(np.float32)
         f = f - (1 - pk.get("mown_3plus", 1.0)) * layers["mw_many"].astype(np.float32)
-    return np.clip(f, 0, 1)
+    return np.clip(f, 0, 1) * bare_factor(pk, layers)
 
 
 def _grass_host(hab, layers, shape):

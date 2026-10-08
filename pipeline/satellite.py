@@ -112,3 +112,87 @@ def relative_wetness(ndmi, layers):
         if sel.sum() > 50:
             out[sel] = (rankdata(nd[sel]) - 0.5) / sel.sum()
     return out
+
+
+# ---------------------------------------------------------------- bare soil (tillage)
+BARE_MONTHS = (4, 5, 10, 11)   # grass is green then, while tilled fields lie bare after sowing / ploughing
+BARE_PER_TILE_MONTH = 2
+BARE_BUDGET_S = 20 * 60
+
+
+def _search_sorted(bbox, start, end, max_cloud=50):
+    body = {"collections": ["sentinel-2-l2a"], "bbox": list(bbox),
+            "datetime": f"{start}T00:00:00Z/{end}T23:59:59Z",
+            "query": {"eo:cloud_cover": {"lt": max_cloud}}, "limit": 200,
+            "sortby": [{"field": "properties.eo:cloud_cover", "direction": "asc"}]}
+    r = requests.post(STAC, json=body, headers=UA, timeout=120)
+    r.raise_for_status()
+    return r.json().get("features", [])
+
+
+def _tile(item):
+    p = item["properties"]
+    return p.get("grid:code") or p.get("s2:mgrs_tile") or item["id"].split("_")[1]
+
+
+def bare_soil(region, grid: Grid, workdir):
+    """Share of clear Sentinel-2 views (Apr-May, Oct-Nov, last ~13 months) in which the
+    ground was bare soil (scene class 5). Old pasture is green then; tilled fields are not.
+    Computed at ~50 m and averaged to the map grid, so part-tilled pixels get partial values."""
+    from rasterio.enums import Resampling
+    from .grid import block_mean
+    today = dt.date.today()
+    fine = grid.finer(2)
+    n_clear = np.zeros(fine.shape, np.uint8)
+    n_bare = np.zeros(fine.shape, np.uint8)
+    # one pass per rank (best scene of every tile-month first), so a time-out still covers every month
+    plan = []
+    for back in range(13, -1, -1):
+        y, m = today.year, today.month - back
+        while m <= 0:
+            m, y = m + 12, y - 1
+        if m not in BARE_MONTHS:
+            continue
+        start = dt.date(y, m, 1)
+        end = min((dt.date(y + m // 12, m % 12 + 1, 1) - dt.timedelta(days=1)), today)
+        if end < start:
+            continue
+        try:
+            items = _search_sorted(region["bbox"], start.isoformat(), end.isoformat())
+        except Exception as exc:
+            log.warn(f"bare soil: search {y}-{m:02d} failed ({exc.__class__.__name__})")
+            continue
+        per_tile = {}
+        for it in items:
+            per_tile.setdefault(_tile(it), []).append(it)
+        for tile, its in per_tile.items():
+            for rank, it in enumerate(its[:BARE_PER_TILE_MONTH]):
+                plan.append((rank, f"{y}-{m:02d}", tile, it))
+    plan.sort(key=lambda x: (x[0], x[1], x[2]))
+    log.info(f"bare soil: {len(plan)} Sentinel-2 scenes planned "
+             f"({len({p[1] for p in plan})} months, {len({p[2] for p in plan})} tiles)")
+    used, t0 = 0, time.time()
+    for rank, month, tile, it in plan:
+        if time.time() - t0 > BARE_BUDGET_S:
+            log.warn(f"bare soil: time budget reached after {used} scenes")
+            break
+        try:
+            scl = _read(it["assets"]["scl"]["href"], fine, Resampling.nearest, np.uint8, 0)
+        except Exception as exc:
+            log.warn(f"bare soil {it['id']}: {exc.__class__.__name__}: {str(exc)[:140]}")
+            continue
+        clear = np.isin(scl, GOOD_SCL)
+        n_clear += clear.astype(np.uint8)
+        n_bare += (scl == 5).astype(np.uint8)
+        used += 1
+    frac = np.where(n_clear >= 2, n_bare / np.maximum(n_clear, 1), np.nan).astype(np.float32)
+    known = np.isfinite(frac)
+    frac_c = block_mean(np.nan_to_num(frac), 2)
+    cover = block_mean(known.astype(np.float32), 2)
+    out = np.where(cover > 0.5, frac_c / np.maximum(cover, 1e-6), np.nan).astype(np.float32)
+    obs = block_mean(n_clear.astype(np.float32), 2)
+    log.info(f"bare soil: {used} scenes in {time.time() - t0:.0f}s; {np.isfinite(out).mean():.0%} of region "
+             f"with 2+ clear views (median {np.median(obs):.0f} views)")
+    if np.isfinite(out).mean() < 0.3:
+        raise RuntimeError("too few clear views for the bare-soil layer")
+    return {"bare_frac": out.astype(np.float16), "bare_built": np.array(today.isoformat())}
