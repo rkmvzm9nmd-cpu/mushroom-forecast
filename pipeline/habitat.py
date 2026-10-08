@@ -90,12 +90,14 @@ def _forest_host(hab, layers, shape):
     unknown_w = hab.get("unknown_forest", 0.5)
     tree = layers.get("lc_tree")
     tree = tree.astype(np.float32) if tree is not None else np.full(shape, 0.3, np.float32)
-    have_ft = all(("ft_" + k) in layers for k in FOREST_TYPES)
+    have_ft = any(("ft_" + k) in layers for k in FOREST_TYPES)   # missing types count as 0
     if not have_ft:
         return np.clip(unknown_w * tree, 0, 1)
     total = np.zeros(shape, np.float32)
     mapped = np.zeros(shape, np.float32)
     for k in FOREST_TYPES:
+        if "ft_" + k not in layers:
+            continue
         f = layers["ft_" + k].astype(np.float32)
         total += weights.get(k, 0.0) * f
         mapped += f

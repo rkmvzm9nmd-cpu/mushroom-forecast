@@ -176,8 +176,11 @@ def process_region(region, species, out_dir, cache_dir):
         "soil_date": soil_date, "satellite_wetness": sat_info,
         "places": region.get("places", []), "good_threshold": GOOD,
         "stats": stats, "hotspots": spots, "validation": validation,
-        "sources": {"tree_species": (None if not all(("ft_" + k) in layers for k in static_layers.FOREST_TYPES)
-                                     else "IGN BD Foret" if region.get("country") == "FR" else "ForestPaths EU 10 m"),
+        "sources": {"tree_species": (None if not any(("ft_" + k) in layers for k in static_layers.FOREST_TYPES)
+                                     else "IGN BD Foret" if region.get("country") == "FR"
+                                     else "Scottish Forestry NFI + NWSS" if region.get("country") == "GB-SCT"
+                                     else "ForestPaths EU 10 m"),
+                    "habitat_map": "NatureScot HabMoS" if region.get("country") == "GB-SCT" and "pa_permanent" in layers else None,
                     "ploughing_year": int(layers["pl_year"]) if "pl_year" in layers else None,
                     "mowing_year": int(layers["mw_year"]) if "mw_year" in layers else None,
                     "rpg": all(("pa_" + k) in layers for k in static_layers.PASTURE_TYPES),

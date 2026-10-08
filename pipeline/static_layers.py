@@ -19,7 +19,7 @@ import unicodedata
 import numpy as np
 import requests
 
-from . import log, satellite
+from . import log, satellite, scotland
 from .grid import Grid, block_mean
 
 UA = {"User-Agent": "mushroom-forecast (github.com/rkmvzm9nmd-cpu/mushroom-forecast)"}
@@ -29,7 +29,8 @@ os.environ.setdefault("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", ".tif,.tiff")
 os.environ.setdefault("GDAL_HTTP_MAX_RETRY", "4")
 os.environ.setdefault("GDAL_HTTP_RETRY_DELAY", "2")
 
-FOREST_TYPES = ["beech", "oak", "chestnut", "pine", "sprucefir", "mixedbroad", "mixed", "otherbroad"]
+FOREST_TYPES = ["beech", "oak", "chestnut", "pine", "sprucefir", "mixedbroad", "mixed", "otherbroad",
+                "birch", "nativepine"]   # last two mapped in Scotland only
 LC_CLASSES = {"tree": [10], "shrub": [20], "grass": [30], "crop": [40], "built": [50],
               "bare": [60, 70], "water": [80, 90, 95, 100]}
 SUB = 4  # sub-sampling factor for fractional land cover / forest type
@@ -169,11 +170,11 @@ def classify_forest(essence, tfv):
     return 0
 
 
-def wfs_features(layer, grid: Grid, label, cql=None, page=5000, step=40000.0):
+def wfs_features(layer, grid: Grid, label, cql=None, page=5000, step=40000.0,
+                 url="https://data.geopf.fr/wfs/ows", geom="geom"):
     """Yield GeoJSON features (EPSG:3857) from the Geoplateforme WFS over the grid,
     in 40 km tiles with paging. If a CQL filter is given but rejected, falls back
     to a plain bbox query (filter then has to be applied by the caller)."""
-    url = "https://data.geopf.fr/wfs/ows"
     minx, miny, maxx, maxy = grid.bounds_3857
     use_cql = cql is not None
     for x in np.arange(minx, maxx, step):
@@ -186,7 +187,7 @@ def wfs_features(layer, grid: Grid, label, cql=None, page=5000, step=40000.0):
                           "SRSNAME": "EPSG:3857", "COUNT": page, "STARTINDEX": start}
                 bbox_txt = f"{bb[0]},{bb[1]},{bb[2]},{bb[3]}"
                 if use_cql:
-                    params["CQL_FILTER"] = f"BBOX(geom,{bbox_txt},'EPSG:3857') AND ({cql})"
+                    params["CQL_FILTER"] = f"BBOX({geom},{bbox_txt},'EPSG:3857') AND ({cql})"
                 else:
                     params["BBOX"] = bbox_txt + ",EPSG:3857"
                 data = None
@@ -364,6 +365,16 @@ def french_ph(grid: Grid, workdir):
 
 def build_ph(region, grid, workdir):
     soil = soil_ph(region["bbox"], grid, workdir)  # SoilGrids, worldwide
+    if region.get("country") == "GB-SCT":
+        try:
+            sc = scotland.hutton_ph(grid, workdir)
+            both = np.isfinite(sc) & np.isfinite(soil)
+            if both.any():
+                log.info(f"pH Scotland (Hutton) vs SoilGrids: mean {np.nanmean(sc[both]):.2f} vs "
+                         f"{np.nanmean(soil[both]):.2f}, correlation {np.corrcoef(sc[both], soil[both])[0, 1]:.2f}")
+            return {"ph": np.where(np.isfinite(sc), sc, soil).astype(np.float32), "ph_src_fr": np.isfinite(sc)}
+        except Exception as exc:
+            log.warn(f"Scottish pH map unavailable, using SoilGrids: {exc.__class__.__name__}: {str(exc)[:200]}")
     if region.get("country") == "FR":
         try:
             fr = french_ph(grid, workdir)
@@ -521,16 +532,19 @@ def grassland_use(region, grid: Grid, workdir):
 GROUPS = {
     "dem": (1, lambda r, g, w: {"elev": elevation(r["bbox"], g)}),
     "lc": (1, lambda r, g, w: {"lc_" + k: v for k, v in landcover(r["bbox"], g).items()}),
-    "ph": (2, build_ph),
+    "ph": (3, build_ph),
     "bdforet": (1, lambda r, g, w: bdforet(g)),
     "rpg": (3, lambda r, g, w: rpg(g)),
     "rpg_hist": (1, lambda r, g, w: rpg_history(g)),
     "forest_eu": (1, lambda r, g, w: forest_eu(g, w)),
     "plough": (2, grassland_use),
+    "woodland_sct": (1, lambda r, g, w: scotland.woodland(g)),
+    "habitat_sct": (1, lambda r, g, w: scotland.habitat_map(g)),
     "ndmi": (1, lambda r, g, w: satellite.ndmi_composite(r, g, w), 5),   # refreshed every 5 days
 }
 FRANCE_ONLY = {"bdforet", "rpg", "rpg_hist"}
 OUTSIDE_FRANCE = {"forest_eu"}
+SCOTLAND_ONLY = {"woodland_sct", "habitat_sct"}
 
 
 def _migrate_v1(region, cache_dir, rdir):
@@ -560,7 +574,8 @@ def load_all(region, grid: Grid, cache_dir):
     for g, spec in GROUPS.items():
         ver, fn = spec[0], spec[1]
         max_age = spec[2] if len(spec) > 2 else None   # days; None = keep forever
-        if (g in FRANCE_ONLY and not france) or (g in OUTSIDE_FRANCE and france):
+        if (g in FRANCE_ONLY and not france) or (g in OUTSIDE_FRANCE and france) or \
+                (g in SCOTLAND_ONLY and region.get("country") != "GB-SCT"):
             continue
         path = os.path.join(rdir, g + ".npz")
         stale = None

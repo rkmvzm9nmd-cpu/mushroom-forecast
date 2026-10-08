@@ -3,7 +3,8 @@
 # and set country (FR enables the French-only layers: IGN tree species, farm
 # parcels and the French soil pH map; elsewhere Europe-wide data is used, including
 # the ForestPaths 10 m tree-genus map). The Copernicus ploughing indicator is used
-# everywhere when CDSE_S3_KEY / CDSE_S3_SECRET secrets are set.
+# everywhere when CDSE_S3_KEY / CDSE_S3_SECRET secrets are set. GB-SCT enables the
+# Scottish layers (woodland types incl. birch / native pinewood, habitat map, soil pH).
 regions:
   - id: massif-central-alps
     name: "Lozère to Isère"
@@ -30,3 +31,29 @@ regions:
       - {name: "Viștea / Viștișoara", lat: 45.8208, lon: 24.7706}
       - {name: "Poiana Brașov", lat: 45.5940, lon: 25.5520}
       - {name: "Zărnești", lat: 45.5640, lon: 25.3180}
+
+  - id: scotland-south
+    name: "Scotland: Borders & Southern Uplands"
+    bbox: [-5.0, 54.9, -2.0, 56.1]
+    zoom: 10
+    timezone: Europe/London
+    country: GB-SCT                   # Scottish Forestry woodland types, NatureScot habitats, Hutton soil pH
+    weather_spacing: 0.15
+    places:
+      - {name: "Edinburgh", lat: 55.953, lon: -3.189}
+      - {name: "Peebles", lat: 55.651, lon: -3.188}
+      - {name: "Moffat", lat: 55.333, lon: -3.442}
+      - {name: "Glentrool", lat: 55.087, lon: -4.487}
+
+  - id: scotland-highland
+    name: "Scotland: Perthshire & Cairngorms"
+    bbox: [-5.0, 56.1, -2.4, 57.4]
+    zoom: 10
+    timezone: Europe/London
+    country: GB-SCT
+    weather_spacing: 0.15
+    places:
+      - {name: "Pitlochry", lat: 56.703, lon: -3.734}
+      - {name: "Aberfeldy", lat: 56.620, lon: -3.866}
+      - {name: "Aviemore", lat: 57.195, lon: -3.826}
+      - {name: "Braemar", lat: 57.006, lon: -3.397}

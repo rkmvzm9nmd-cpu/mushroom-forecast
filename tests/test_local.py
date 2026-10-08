@@ -84,6 +84,8 @@ with tempfile.TemporaryDirectory() as tmp:
         if name == "regions.yaml":
             d["regions"][0]["bbox"] = [3.6, 44.65, 3.9, 44.8]
             d["regions"][1]["bbox"] = [24.7, 45.7, 24.9, 45.85]
+            d["regions"][2]["bbox"] = [-3.4, 55.5, -3.2, 55.65]
+            d["regions"][3]["bbox"] = [-3.9, 57.1, -3.7, 57.25]
         return d
     run.load_yaml = small
     for _ in range(2):
@@ -104,5 +106,5 @@ with tempfile.TemporaryDirectory() as tmp:
     print("past_days requested per run:", calls)
     print("sources", meta["sources"])
     print("max scores", {k: v["max"][:4] for k, v in meta["stats"].items()})
-    assert meta["weather_ok"] and calls == [92, 92, 31, 31] and meta["sources"]["rpg"]
+    assert meta["weather_ok"] and calls == [92, 92, 92, 92, 31, 31, 31, 31] and meta["sources"]["rpg"]
 print("OK")

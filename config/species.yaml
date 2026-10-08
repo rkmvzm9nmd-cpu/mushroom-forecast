@@ -9,7 +9,8 @@
 #                     ploughing 0-2 years ago (recent), 3-6 years ago (mid) or a cover change, and
 #                     where it saw 2 cuts (mown_twice) or 3+ cuts (mown_3plus, intensive silage) last year.
 #                     Forest types come from IGN BD Foret in France:
-#                     beech, oak, chestnut, pine, sprucefir, mixedbroad, mixed, otherbroad.
+#                     beech, oak, chestnut, pine, sprucefir, mixedbroad, mixed, otherbroad,
+#                     plus birch and nativepine (Caledonian/native Scots pine), mapped in Scotland.
 #                     `unknown_forest` is used where tree species are not mapped (outside France).
 # habitat.ph        : trapezoid [a, b, c, d] on topsoil pH (0 below a, 1 between b and c, 0 above d)
 # habitat.elev      : trapezoid on elevation (m)
@@ -74,7 +75,7 @@ species:
     notes: "Under beech, chestnut, oak, spruce and pine on acidic soil. Flushes 8-12 days after a soaking rain with mild nights."
     lookalikes: "Bitter bolete (Tylopilus felleus, pink pores); red-pored boletes."
     habitat:
-      host: {beech: 1.0, chestnut: 1.0, oak: 0.95, sprucefir: 0.85, pine: 0.7, mixed: 0.85, mixedbroad: 0.8, otherbroad: 0.35}
+      host: {beech: 1.0, chestnut: 1.0, oak: 0.95, sprucefir: 0.85, pine: 0.7, mixed: 0.85, mixedbroad: 0.8, otherbroad: 0.35, birch: 0.9, nativepine: 1.0}
       unknown_forest: 0.6
       ph: [3.6, 4.3, 6.5, 7.8]
       elev: [100, 300, 1600, 2000]
@@ -95,7 +96,7 @@ species:
     notes: "Mossy banks under beech and oak on acidic soil; repeated moderate rain, tolerates warmth."
     lookalikes: "False chanterelle (Hygrophoropsis aurantiaca); toxic Omphalotus olearius on wood."
     habitat:
-      host: {beech: 1.0, oak: 1.0, chestnut: 0.9, mixedbroad: 0.85, mixed: 0.8, sprucefir: 0.6, pine: 0.5, otherbroad: 0.3}
+      host: {beech: 1.0, oak: 1.0, chestnut: 0.9, mixedbroad: 0.85, mixed: 0.8, sprucefir: 0.6, pine: 0.5, otherbroad: 0.3, birch: 1.0, nativepine: 0.95}
       unknown_forest: 0.6
       ph: [3.6, 4.2, 6.0, 7.2]
       elev: [0, 200, 1500, 1900]
@@ -116,7 +117,7 @@ species:
     notes: "Damp, mossy conifer woods (spruce, fir), often in large troops. Late autumn into early winter; frost-tolerant."
     lookalikes: "Small brown webcaps (Cortinarius, some deadly) in the same moss."
     habitat:
-      host: {sprucefir: 1.0, mixed: 0.8, pine: 0.7, beech: 0.6, mixedbroad: 0.4, oak: 0.3, chestnut: 0.3, otherbroad: 0.2}
+      host: {sprucefir: 1.0, mixed: 0.8, pine: 0.7, beech: 0.6, mixedbroad: 0.4, oak: 0.3, chestnut: 0.3, otherbroad: 0.2, birch: 0.7, nativepine: 0.9}
       unknown_forest: 0.5
       ph: [3.4, 4.0, 5.8, 6.8]
       elev: [300, 700, 1800, 2100]
@@ -137,7 +138,7 @@ species:
     notes: "Beech and oak leaf litter, often on richer or limestone soils, in damp hollows. Late, after steady rain."
     lookalikes: "Few dangerous ones; easy to miss in dark litter."
     habitat:
-      host: {beech: 1.0, oak: 0.8, mixedbroad: 0.75, mixed: 0.7, chestnut: 0.5, otherbroad: 0.5, sprucefir: 0.3, pine: 0.2}
+      host: {beech: 1.0, oak: 0.8, mixedbroad: 0.75, mixed: 0.7, chestnut: 0.5, otherbroad: 0.5, sprucefir: 0.3, pine: 0.2, birch: 0.3, nativepine: 0.2}
       unknown_forest: 0.5
       ph: [4.4, 5.5, 8.0, 8.8]
       elev: [0, 200, 1500, 1900]
@@ -158,7 +159,7 @@ species:
     notes: "Mixed broadleaf and conifer woods on most soils; late autumn, survives light frosts."
     lookalikes: "Few; check for spines (not gills or pores) under the cap."
     habitat:
-      host: {beech: 1.0, mixed: 0.9, oak: 0.9, mixedbroad: 0.85, sprucefir: 0.8, chestnut: 0.7, pine: 0.6, otherbroad: 0.5}
+      host: {beech: 1.0, mixed: 0.9, oak: 0.9, mixedbroad: 0.85, sprucefir: 0.8, chestnut: 0.7, pine: 0.6, otherbroad: 0.5, birch: 0.8, nativepine: 0.8}
       unknown_forest: 0.6
       ph: [3.8, 4.8, 7.8, 8.6]
       elev: [0, 200, 1700, 2000]
