@@ -107,8 +107,10 @@ def woodland(grid: Grid):
             log.warn(f"{label} unavailable: {exc.__class__.__name__}: {str(exc)[:200]}")
     if not got_any:
         raise RuntimeError("no Scottish woodland layers could be read")
-    out = {"ft_" + t: block_mean((raster == i + 1).astype(np.float32), sl.SUB).astype(np.float16)
+    # fs_ = Scottish survey fractions; merged with the Europe-wide map in static_layers.load_all
+    out = {"fs_" + t: block_mean((raster == i + 1).astype(np.float32), sl.SUB).astype(np.float16)
            for i, t in enumerate(types)}
+    out["fs_surveyed"] = block_mean((raster > 0).astype(np.float32), sl.SUB).astype(np.float16)
     log.info("Scottish woodland types: " + ", ".join(f"{k[3:]} {float(v.mean()) * 100:.1f}%" for k, v in out.items()))
     return out
 
@@ -160,7 +162,8 @@ def _ph_value(v):
     if v is None:
         return np.nan
     if isinstance(v, (int, float, np.floating, np.integer)):
-        return float(v)
+        v = float(v)
+        return v if 2.5 <= v <= 10 else np.nan   # 0 = no data (water, built-up, unsurveyed)
     nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", str(v))]
     nums = [x for x in nums if 2.5 <= x <= 10]
     return float(np.mean(nums)) if nums else np.nan

@@ -532,13 +532,13 @@ def grassland_use(region, grid: Grid, workdir):
 GROUPS = {
     "dem": (1, lambda r, g, w: {"elev": elevation(r["bbox"], g)}),
     "lc": (1, lambda r, g, w: {"lc_" + k: v for k, v in landcover(r["bbox"], g).items()}),
-    "ph": (3, build_ph),
+    "ph": (4, build_ph),
     "bdforet": (1, lambda r, g, w: bdforet(g)),
     "rpg": (3, lambda r, g, w: rpg(g)),
     "rpg_hist": (1, lambda r, g, w: rpg_history(g)),
     "forest_eu": (1, lambda r, g, w: forest_eu(g, w)),
     "plough": (2, grassland_use),
-    "woodland_sct": (1, lambda r, g, w: scotland.woodland(g)),
+    "woodland_sct": (2, lambda r, g, w: scotland.woodland(g)),
     "habitat_sct": (1, lambda r, g, w: scotland.habitat_map(g)),
     "ndmi": (1, lambda r, g, w: satellite.ndmi_composite(r, g, w), 5),   # refreshed every 5 days
 }
@@ -602,6 +602,17 @@ def load_all(region, grid: Grid, cache_dir):
                 log.info(f"layer group '{g}' skipped: {exc}")
             else:
                 log.error(f"layer group '{g}' failed (will retry next run)", exc)
+    if "fs_surveyed" in layers:
+        # Scotland: use the Scottish woodland surveys where they map a wood, and the
+        # Europe-wide tree-genus map elsewhere (e.g. across the border in England)
+        surveyed = layers["fs_surveyed"].astype(np.float32)
+        use_sct = surveyed > 0.05
+        for k in FOREST_TYPES:
+            eu = layers.get("ft_" + k)
+            eu = eu.astype(np.float32) if eu is not None else np.zeros(grid.shape, np.float32)
+            layers["ft_" + k] = np.where(use_sct, layers["fs_" + k].astype(np.float32), eu).astype(np.float16)
+        log.info(f"{region['id']}: Scottish woodland survey used for {float(use_sct.mean()) * 100:.1f}% of cells, "
+                 "Europe-wide tree map elsewhere")
     if "elev" not in layers:
         layers["elev"] = np.full(grid.shape, np.nan, np.float32)
     return layers
