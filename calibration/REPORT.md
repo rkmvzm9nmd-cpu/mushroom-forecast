@@ -1,4 +1,4 @@
-# Model calibration (2026-10-08T14:52Z)
+# Model calibration (2026-10-08T15:04Z)
 
 AUC = how often a real find scores above a comparison point (0.5 = no skill, 1 = perfect).
 Habitat: finds vs all fungi records in the region (spatial cross-validation).
@@ -59,7 +59,7 @@ Timing: find days vs nearby other days at the same place (trained on earlier yea
 | GB-SCT | Field mushroom (rosé des prés) | 34 | 0.59 | - |  | no |
 | GB-SCT | Cep (cèpe) | 372 | 0.67 | 0.63 | {'lag': [14, 19], 'rain_need': 50, 'temp': [6, 9, 19, 22]} | no |
 | GB-SCT | Chanterelle (girolle) | 441 | 0.58 | 0.62 | {'lag': [3, 8], 'rain_need': 50, 'temp': [6, 9, 15, 18]} | yes |
-| GB-SCT | Winter chanterelle | 80 | 0.49 | 0.54 | {'lag': [3, 8], 'rain_need': 35, 'temp': [-4, -1, 13, 16]} | yes |
+| GB-SCT | Winter chanterelle | 80 | 0.49 | 0.54 | {'lag': [3, 8], 'rain_need': 35, 'temp': [-4, -1, 13, 16]} | no |
 | GB-SCT | Horn of plenty (trompette) | 6 | 0.49 | - |  | no |
 | GB-SCT | Hedgehog (pied de mouton) | 178 | 0.64 | 0.68 | {'lag': [10, 15], 'rain_need': 10, 'temp': [4, 7, 13, 16]} | yes |
 

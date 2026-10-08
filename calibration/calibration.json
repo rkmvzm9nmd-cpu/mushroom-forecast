@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-08T14:52Z",
+ "generated": "2026-10-08T15:04Z",
  "habitat": {
   "massif-central-alps": {
    "background_n": 3836,
@@ -2517,7 +2517,7 @@
     "n": 80,
     "n_train": 55,
     "n_test": 25,
-    "use": true,
+    "use": false,
     "auc_rule_train": 0.48863636363636365,
     "auc_rule_test": 0.4882105263157895,
     "auc_fit_train": 0.5880165289256198,
