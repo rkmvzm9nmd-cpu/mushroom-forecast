@@ -8,8 +8,8 @@
 # habitat.ploughed  : (grass species, Europe-wide) share of score kept where Copernicus saw
 #                     ploughing 0-2 years ago (recent), 3-6 years ago (mid) or a cover change, and
 #                     where it saw 2 cuts (mown_twice) or 3+ cuts (mown_3plus, intensive silage) last year;
-#                     bare = share kept where Sentinel-2 saw bare soil in 35%+ of clear Apr-May / Oct-Nov
-#                     views in the last ~13 months (i.e. tilled since the ploughing map's last year).
+#                     bare = share kept where Sentinel-2 saw bare soil in 35%+ of clear Apr-May / Sep-Nov
+#                     views in the last ~25 months (i.e. tilled since the ploughing map's last year).
 #                     Forest types come from IGN BD Foret in France:
 #                     beech, oak, chestnut, pine, sprucefir, mixedbroad, mixed, otherbroad,
 #                     plus birch and nativepine (Caledonian/native Scots pine), mapped in Scotland.

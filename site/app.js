@@ -139,6 +139,14 @@
     return m / 255;
   }
 
+  function sampleCell(gray, lat, lng) {   // the single pixel under the tap, no neighbours
+    const g = S.meta.grid;
+    const [x, y] = latLngToPx(lat, lng, g.zoom);
+    const col = Math.floor(x - g.x0), row = Math.floor(y - g.y0);
+    if (row < 0 || col < 0 || row >= gray.h || col >= gray.w) return null;
+    return gray.data[row * gray.w + col] / 255;
+  }
+
   // ------------------------------------------------------------------ map
   const map = L.map("map", { zoomControl: false, attributionControl: true, preferCanvas: true });
   L.control.zoom({ position: "topleft" }).addTo(map);
@@ -433,7 +441,26 @@
     let satw = null;
     try { if (S.meta.satellite_wetness) satw = sampleAt(await loadGray(`${S.meta.id}/wx/satwet.png`), lat, lng); } catch { /* */ }
     let bare = null;
-    try { if (S.meta.bare_soil && S.meta.bare_soil.used) bare = sampleAt(await loadGray(`${S.meta.id}/wx/bare.png`), lat, lng); } catch { /* */ }
+    try { if (S.meta.bare_soil && S.meta.bare_soil.used) bare = sampleCell(await loadGray(`${S.meta.id}/wx/bare.png`), lat, lng); } catch { /* */ }
+    const ground = {};
+    for (const k of (S.meta.ground_layers || [])) {
+      try { ground[k] = sampleCell(await loadGray(`${S.meta.id}/wx/${k}.png`), lat, lng); } catch { /* */ }
+    }
+    const pc = (v) => `${Math.round(v * 100)}%`;
+    const why = [];
+    if (ground.register_pasture != null || ground.register_arable != null) {
+      const parts = [];
+      if (ground.register_pasture > 0.05) parts.push(`${pc(ground.register_pasture)} permanent/rough pasture`);
+      if (ground.register_resown > 0.05) parts.push(`${pc(ground.register_resown)} re-sown grass`);
+      if (ground.register_arable > 0.05) parts.push(`${pc(ground.register_arable)} arable`);  // declared crops / cultivated
+      const src = S.meta.sources && S.meta.sources.habitat_map ? "habitat map" : "farm register";
+      why.push(`${src}: ${parts.length ? parts.join(", ") : "not listed"}`);
+    }
+    if (ground.ploughed_map != null) {
+      const yr = S.meta.sources && S.meta.sources.ploughing_year;
+      why.push(`ploughing map (to ${yr || "latest"}): ${ground.ploughed_map > 0.05 ? `ploughed on ${pc(ground.ploughed_map)}` : "not ploughed"}`);
+    }
+    if (bare != null) why.push(`bare earth in ${pc(bare)} of clear spring/autumn satellite views since ${(S.meta.bare_soil.built || "").slice(0, 4) - 2}${bare >= 0.1 ? " (tilled recently: score cut)" : ""}`);
     let soil = null;
     try { if (S.meta.soil_date) soil = sampleAt(await loadGray(layerPath("soil")), lat, lng, true); } catch { /* */ }
     const outside = rows.every(([, v]) => v == null);
@@ -444,7 +471,8 @@
     popup.setContent(`
       <div class="pop-title">${label}</div>
       <div class="pop-grid">${rows.map(([s, v]) => `<span>${esc(s.name)}</span><span class="v">${pct(v)}</span>`).join("")}</div>
-      <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}${soil != null ? ` · soil wetness (satellite, ${esc(S.meta.soil_date)}): ${Math.round(soil * 100)}%` : ""}${satw ? ` · vegetation wetter than ${Math.round(satw * 100)}% of similar ground (Sentinel-2)` : ""}${bare != null ? ` · bare soil in ${Math.round(bare * 100)}% of clear spring/autumn satellite views${bare >= 0.1 ? " (likely tilled recently)" : ""}` : ""}</div>
+      <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}${soil != null ? ` · soil wetness (satellite, ${esc(S.meta.soil_date)}): ${Math.round(soil * 100)}%` : ""}${satw ? ` · vegetation wetter than ${Math.round(satw * 100)}% of similar ground (Sentinel-2)` : ""}</div>
+      ${why.length ? `<div class="note"><b>Ground:</b> ${esc(why.join(" · "))}</div>` : ""}
       ${outlookHtml}
       <div class="btns"><button class="btn primary" id="saveHere">Save spot</button><a class="btn" href="${navUrl(lat.toFixed(5), lng.toFixed(5))}" target="_blank" rel="noopener">Directions</a></div>`);
     const saveBtn = document.getElementById("saveHere");

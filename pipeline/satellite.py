@@ -118,7 +118,8 @@ def relative_wetness(ndmi, layers):
 BARE_MONTHS = (4, 5, 9, 10, 11)   # sowing (Apr-May) and stubble / autumn ploughing (Sep-Nov)
 BARE_NDVI = 0.25                  # bare earth; dormant brown grass stays above this
 BARE_PER_TILE_MONTH = 4
-BARE_BUDGET_S = 20 * 60
+BARE_LOOKBACK_MONTHS = 25   # two seasons, so the gap after the Copernicus ploughing map's last year is covered
+BARE_BUDGET_S = 25 * 60
 
 
 def _search_sorted(bbox, start, end, max_cloud=50):
@@ -137,7 +138,7 @@ def _tile(item):
 
 
 def bare_soil(region, grid: Grid, workdir):
-    """Share of clear Sentinel-2 views (Apr-May, Sep-Nov, last ~13 months) in which the
+    """Share of clear Sentinel-2 views (Apr-May, Sep-Nov, last ~25 months) in which the
     ground was bare earth: scene class 5 ("not vegetated") AND NDVI below 0.25, so winter-brown
     grass does not count. Old pasture is never bare; tilled fields are, after ploughing or sowing.
     Computed at ~50 m and averaged to the map grid, so part-tilled pixels get partial values."""
@@ -149,7 +150,7 @@ def bare_soil(region, grid: Grid, workdir):
     n_bare = np.zeros(fine.shape, np.uint8)
     # one pass per rank (best scene of every tile-month first), so a time-out still covers every month
     plan = []
-    for back in range(13, -1, -1):
+    for back in range(BARE_LOOKBACK_MONTHS, -1, -1):
         y, m = today.year, today.month - back
         while m <= 0:
             m, y = m + 12, y - 1

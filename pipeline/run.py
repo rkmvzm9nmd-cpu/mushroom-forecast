@@ -149,6 +149,18 @@ def process_region(region, species, out_dir, cache_dir):
         sat_info = {"built": str(layers.get("ndmi_built", "")),
                     "coverage": round(float(np.isfinite(sat_wet).mean()), 3),
                     "median_age_days": int(np.median(ages)) if ages.size else None}
+    # "why" layers for the spot card: what the farm register and the ploughing map say
+    ground = {}
+    if all(k in layers for k in ("pa_permanent", "pa_rough")):
+        ground["register_pasture"] = layers["pa_permanent"].astype(np.float32) + layers["pa_rough"].astype(np.float32)
+    if "pa_temporary" in layers:
+        ground["register_resown"] = layers["pa_temporary"].astype(np.float32)
+    if "pa_tilled" in layers:
+        ground["register_arable"] = layers["pa_tilled"].astype(np.float32)
+    if "pl_recent" in layers:
+        ground["ploughed_map"] = np.clip(sum(layers[k].astype(np.float32) for k in ("pl_recent", "pl_mid", "pl_changed")), 0, 1)
+    for k, v in ground.items():
+        render.save_png(np.clip(np.nan_to_num(v), 0, 1), os.path.join(rdir, "wx", f"{k}.png"))
     bare_info = None
     if "bare_frac" in layers:
         raw = dict(layers)
@@ -278,7 +290,7 @@ def process_region(region, species, out_dir, cache_dir):
     meta = {
         "id": rid, "name": region["name"], "generated": dt.datetime.now(ZoneInfo(tz)).isoformat(timespec="minutes"),
         "grid": grid.to_json(), "half": HALF, "dates": dates, "weather_ok": weather_ok,
-        "soil_date": soil_date, "satellite_wetness": sat_info, "bare_soil": bare_info,
+        "soil_date": soil_date, "satellite_wetness": sat_info, "bare_soil": bare_info, "ground_layers": sorted(ground),
         "places": region.get("places", []), "good_threshold": GOOD,
         "stats": stats, "hotspots": spots, "validation": validation,
         "sources": {"tree_species": (None if not any(("ft_" + k) in layers for k in static_layers.FOREST_TYPES)
