@@ -1,0 +1,79 @@
+name: Weather history cache
+
+# Builds a long-term daily weather archive (pipeline/history_cache.py) and stores it as
+# CSV files on the `weather-history-data` branch. Incremental: each run starts from the
+# files already on that branch, so it can be re-run to resume or to top up.
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "Region id from config/regions.yaml"
+        default: massif-central-alps
+  push:
+    branches: [weather-history]
+    paths: ["pipeline/history_cache.py", ".github/workflows/weather-history.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weather-history
+  cancel-in-progress: false
+
+env:
+  REGION: ${{ github.event.inputs.region || 'massif-central-alps' }}
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        parts: ["places,soil", "cells"]   # split so each job stays under the free daily allowance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pyyaml
+      - name: Start from the existing archive
+        run: |
+          if git ls-remote --exit-code origin weather-history-data >/dev/null 2>&1; then
+            git fetch -q --depth 1 origin weather-history-data
+            mkdir -p history-cache && git --work-tree=history-cache checkout FETCH_HEAD -- . && git reset -q
+          fi
+          ls -R history-cache 2>/dev/null | head || true
+      - name: Fetch
+        run: python -m pipeline.history_cache --region "$REGION" --out history-cache --parts "${{ matrix.parts }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: history-${{ strategy.job-index }}
+          path: history-cache
+          if-no-files-found: ignore
+
+  publish:
+    needs: fetch
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: parts
+      - name: Merge and push to weather-history-data
+        run: |
+          mkdir -p data
+          # each job carries the whole archive; keep the longest copy of every file
+          cd parts
+          find . -name "*.csv" | while read f; do
+            rel="${f#./*/}"; dst="../data/$rel"; mkdir -p "$(dirname "$dst")"
+            if [ ! -f "$dst" ] || [ "$(wc -l < "$f")" -gt "$(wc -l < "$dst")" ]; then cp "$f" "$dst"; fi
+          done
+          cd ../data
+          [ -n "$(ls -A)" ] || exit 0
+          git init -q -b weather-history-data
+          git add -A
+          git -c user.name="forecast-bot" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "Weather history $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" weather-history-data
