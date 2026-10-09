@@ -1,0 +1,115 @@
+=== run 2026-10-09 13:36 UTC, parts places,soil
+[12:29:37] INFO  Lozère to Isère: 8 files to check, up to 2026-10-07
+[12:29:37] INFO  place_Chastanier.csv: up to date
+[12:29:39] INFO  soil_Chastanier.csv: 434 days
+[12:29:40] INFO  throttle: 293/min 293/h used; waiting
+[12:30:10] INFO  throttle: 293/min 293/h used; waiting
+[12:31:00] WARN  archive ReadTimeout; retry
+[12:31:31] INFO  throttle: 261/min 554/h used; waiting
+[12:32:03] INFO  place_Saint-Agrève.csv: 13064 days (grid elevation 1072.0 m)
+[12:32:06] INFO  throttle: 484/min 1038/h used; waiting
+[12:32:36] INFO  throttle: 484/min 1038/h used; waiting
+[12:33:26] WARN  archive ReadTimeout; retry
+[12:34:16] WARN  archive ReadTimeout; retry
+[12:35:43] WARN  archive ReadTimeout; retry
+[12:36:33] WARN  archive ReadTimeout; retry
+[12:38:01] WARN  archive ReadTimeout; retry
+[12:38:51] WARN  archive ReadTimeout; retry
+[12:39:58] INFO  soil_Saint-Agrève.csv: 8730 days
+[12:40:19] WARN  archive ReadTimeout; retry
+[12:40:50] INFO  throttle: 419/min 1871/h used; waiting
+[12:41:40] WARN  archive ReadTimeout; retry
+[12:42:11] INFO  throttle: 261/min 2132/h used; waiting
+[12:43:01] WARN  archive ReadTimeout; retry
+[12:43:33] INFO  place_Pilat.csv: 13064 days (grid elevation 1276.0 m)
+[12:43:36] INFO  throttle: 484/min 2616/h used; waiting
+[12:44:26] WARN  archive ReadTimeout; retry
+[12:45:17] WARN  archive ReadTimeout; retry
+[12:46:08] WARN  archive ReadTimeout; retry
+[12:47:35] WARN  archive ReadTimeout; retry
+[12:48:27] WARN  archive ReadTimeout; retry
+[12:49:17] WARN  archive ReadTimeout; retry
+[12:50:44] WARN  archive ReadTimeout; retry
+[12:51:34] WARN  archive ReadTimeout; retry
+[12:52:40] INFO  soil_Pilat.csv: 8730 days
+[12:52:41] INFO  throttle: 383/min 3449/h used; waiting
+[12:53:11] INFO  throttle: 383/min 3449/h used; waiting
+[12:54:01] WARN  archive ReadTimeout; retry
+[12:54:32] INFO  throttle: 261/min 3710/h used; waiting
+[12:55:22] WARN  archive ReadTimeout; retry
+[12:55:54] INFO  place_Matheysine.csv: 13064 days (grid elevation 1001.0 m)
+[12:55:57] INFO  throttle: 484/min 4194/h used; waiting
+[12:56:27] INFO  throttle: 223/min 4194/h used; waiting
+[12:56:57] INFO  throttle: 0/min 4194/h used; waiting
+[12:57:27] INFO  throttle: 0/min 4194/h used; waiting
+[12:57:57] INFO  throttle: 0/min 4194/h used; waiting
+[12:58:27] INFO  throttle: 0/min 4194/h used; waiting
+[12:58:57] INFO  throttle: 0/min 4194/h used; waiting
+[12:59:27] INFO  throttle: 0/min 4194/h used; waiting
+[12:59:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:00:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:00:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:01:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:01:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:02:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:02:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:03:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:03:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:04:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:04:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:05:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:05:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:06:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:06:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:07:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:07:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:08:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:08:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:09:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:09:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:10:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:10:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:11:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:11:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:12:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:12:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:13:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:13:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:14:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:14:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:15:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:15:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:16:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:16:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:17:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:17:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:18:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:18:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:19:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:19:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:20:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:20:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:21:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:21:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:22:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:22:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:23:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:23:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:24:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:24:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:25:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:25:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:26:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:26:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:27:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:27:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:28:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:28:57] INFO  throttle: 0/min 4194/h used; waiting
+[13:29:27] INFO  throttle: 0/min 4194/h used; waiting
+[13:30:24] WARN  archive ReadTimeout; retry
+[13:31:14] WARN  archive ReadTimeout; retry
+[13:32:41] WARN  archive ReadTimeout; retry
+[13:33:31] WARN  archive ReadTimeout; retry
+[13:34:59] WARN  archive ReadTimeout; retry
+[13:35:49] WARN  archive ReadTimeout; retry
+[13:36:50] INFO  soil_Matheysine.csv: 8730 days

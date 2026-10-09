@@ -1,0 +1,46 @@
+=== run 2026-10-09 12:50 UTC, parts cells
+[12:29:35] INFO  Lozère to Isère: 18 files to check, up to 2026-10-07
+[12:29:35] INFO  c_44.5_3.5.csv: up to date
+[12:29:35] INFO  c_44.5_4.0.csv: up to date
+[12:29:35] INFO  c_44.5_4.5.csv: up to date
+[12:29:35] INFO  c_44.5_5.0.csv: up to date
+[12:29:35] INFO  c_44.5_5.5.csv: up to date
+[12:29:35] INFO  c_44.5_6.0.csv: up to date
+[12:29:38] INFO  c_45.0_3.5.csv: 3933 days (grid elevation 1052.0 m)
+[12:29:38] INFO  throttle: 281/min 281/h used; waiting
+[12:30:08] INFO  throttle: 281/min 281/h used; waiting
+[12:30:58] WARN  archive ReadTimeout; retry
+[12:31:50] WARN  archive ReadTimeout; retry
+[12:32:40] WARN  archive ReadTimeout; retry
+[12:33:40] INFO  c_45.0_4.0.csv: 3933 days (grid elevation 742.0 m)
+[12:33:42] INFO  c_45.0_4.5.csv: 3933 days (grid elevation 514.0 m)
+[12:33:42] INFO  throttle: 281/min 843/h used; waiting
+[12:34:12] INFO  throttle: 281/min 843/h used; waiting
+[12:35:03] WARN  archive ReadTimeout; retry
+[12:35:53] WARN  archive ReadTimeout; retry
+[12:36:55] INFO  c_45.0_5.0.csv: 3933 days (grid elevation 174.0 m)
+[12:36:56] INFO  c_45.0_5.5.csv: 3933 days (grid elevation 1415.0 m)
+[12:36:56] INFO  throttle: 301/min 1405/h used; waiting
+[12:37:26] INFO  throttle: 301/min 1405/h used; waiting
+[12:37:58] INFO  c_45.0_6.0.csv: 3933 days (grid elevation 2444.0 m)
+[12:37:58] INFO  throttle: 281/min 1686/h used; waiting
+[12:38:28] INFO  throttle: 281/min 1686/h used; waiting
+[12:39:18] WARN  archive ReadTimeout; retry
+[12:40:10] WARN  archive ReadTimeout; retry
+[12:41:00] WARN  archive ReadTimeout; retry
+[12:42:01] INFO  c_45.5_3.5.csv: 3933 days (grid elevation 914.0 m)
+[12:42:02] INFO  c_45.5_4.0.csv: 3933 days (grid elevation 984.0 m)
+[12:42:02] INFO  throttle: 281/min 2248/h used; waiting
+[12:42:32] INFO  throttle: 281/min 2248/h used; waiting
+[12:43:22] WARN  archive ReadTimeout; retry
+[12:44:13] WARN  archive ReadTimeout; retry
+[12:45:15] INFO  c_45.5_4.5.csv: 3933 days (grid elevation 536.0 m)
+[12:45:16] INFO  c_45.5_5.0.csv: 3933 days (grid elevation 254.0 m)
+[12:45:16] INFO  throttle: 301/min 2810/h used; waiting
+[12:45:46] INFO  throttle: 301/min 2810/h used; waiting
+[12:46:36] WARN  archive ReadTimeout; retry
+[12:47:27] WARN  archive ReadTimeout; retry
+[12:47:58] INFO  c_45.5_5.5.csv: 3933 days (grid elevation 403.0 m)
+[12:48:18] WARN  archive ReadTimeout; retry
+[12:49:08] WARN  archive ReadTimeout; retry
+[12:50:10] INFO  c_45.5_6.0.csv: 3933 days (grid elevation 316.0 m)
