@@ -13,6 +13,15 @@ from tests import test_local as TL  # noqa: E402  (reuses fake layers; runs its 
 from pipeline import calibrate as C, run as R, sightings, static_layers  # noqa: E402
 from pipeline.grid import Grid  # noqa: E402
 
+
+def fake_jjas(points, year):
+    # 2026 is the driest year everywhere; other years vary
+    return [{"rain": 300.0, "balance": -400.0 if year == 2026 else -150.0 + 7 * (year % 11)} for _ in points]
+
+
+C._jjas = fake_jjas
+C.time.sleep = lambda s: None
+
 rng = np.random.default_rng(3)
 static_layers.GROUPS = TL.fake_groups()
 orig = R.load_yaml
@@ -66,3 +75,12 @@ with tempfile.TemporaryDirectory() as tmp:
     import shutil
     os.makedirs(os.path.join(R.ROOT, "calibration"), exist_ok=True)
 print("OK")
+
+
+# drought-year check
+clim = C.drought_years(R.load_yaml("regions.yaml")["regions"], os.path.join(tempfile.mkdtemp(), "climate.json"),
+                       today=dt.date(2026, 10, 9))
+r = clim["regions"]["massif-central-alps"]
+assert r["year"] == 2026 and "Chastanier" in r["drought_places"], r
+assert r["places"]["Chastanier"]["rank_driest"] == 1 and r["places"]["Chastanier"]["of_years"] == 36
+print("drought OK")

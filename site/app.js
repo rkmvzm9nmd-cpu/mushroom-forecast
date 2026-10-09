@@ -139,13 +139,30 @@
     return m / 255;
   }
 
-  function sampleCell(gray, lat, lng) {   // the single pixel under the tap, no neighbours
-    const g = S.meta.grid;
+  function sampleCell(gray, lat, lng, half) {   // the single pixel under the tap, no neighbours
+    const g = S.meta.grid, k = half ? S.meta.half : 1;
     const [x, y] = latLngToPx(lat, lng, g.zoom);
-    const col = Math.floor(x - g.x0), row = Math.floor(y - g.y0);
+    const col = Math.floor((x - g.x0) / k), row = Math.floor((y - g.y0) / k);
     if (row < 0 || col < 0 || row >= gray.h || col >= gray.w) return null;
     return gray.data[row * gray.w + col] / 255;
   }
+
+  // drought year: June-September water balance among the driest years since 1991 at a reference place
+  function droughtNear(lat, lng) {
+    const d = S.meta && S.meta.drought;
+    if (!d || !d.places) return null;
+    const m = new Date().getMonth() + 1;
+    if (m < 10 || String(new Date().getFullYear()) !== String(d.year)) return null;   // Oct-Dec of that year
+    let best = null;
+    for (const p of (S.meta.places || [])) {
+      const info = d.places[p.name];
+      if (!info) continue;
+      const km = Math.hypot((p.lat - lat) * 111, (p.lon - lng) * 111 * Math.cos(lat * Math.PI / 180));
+      if (km <= 40 && (!best || km < best.km)) best = { name: p.name, km, ...info };
+    }
+    return best && best.drought ? best : null;
+  }
+  const droughtText = (d) => `Drought year near ${d.name}: June–September was the ${d.rank_driest === 1 ? "driest" : `${d.rank_driest}${["", "st", "nd", "rd"][d.rank_driest] || "th"} driest`} of ${d.of_years} years since 1991 (rain minus evaporation ${Math.round(d.balance_mm)} mm${d.normal_balance_mm != null ? `, normal ${Math.round(d.normal_balance_mm)} mm` : ""}). Expect a late, smaller flush.`;
 
   // ------------------------------------------------------------------ map
   const map = L.map("map", { zoomControl: false, attributionControl: true, preferCanvas: true });
@@ -286,6 +303,9 @@
       ${s.status ? `<p class="warn">${esc(s.status)}</p>` : ""}
       <h3>Where and when</h3><p>${esc(s.notes)}</p>
       <h3>Look-alikes</h3><p>${esc(s.lookalikes)}</p>
+      ${(() => { const d = S.meta.drought; if (!d || !d.drought_places || !d.drought_places.length || !s.root_zone_d0) return "";
+        const m = new Date().getMonth() + 1; if (m < 10 || String(new Date().getFullYear()) !== String(d.year)) return "";
+        return `<p class="warn">Drought year at ${esc(d.drought_places.join(", "))}: June–September was among the driest 10% of years since 1991. Rain first has to refill the dry root zone, so expect a late, smaller flush.</p>`; })()}
       <h3>Model check</h3><p>Habitat map ranks real recorded finds above random ground: <b>${auc}</b>.</p>
       ${v.cal_auc_rules != null ? `<p class="note">Fair test against where mushroom recorders actually go: rules ${Math.round(v.cal_auc_rules * 100)}%${v.cal_auc_learned != null ? `, learned model ${Math.round(v.cal_auc_learned * 100)}%` : ""}.</p>` : ""}
       <p class="note">${[v.learned_habitat ? "Habitat weights <b>learned</b> from local finds" : "Habitat from expert rules",
@@ -295,7 +315,7 @@
       ${v.auc_with_satellite != null ? `<p class="note">With satellite wetness added: ${Math.round(v.auc_with_satellite * 100)}% — ${v.satellite_used ? "better, so it is switched on for this species." : "no clear gain, so it is not used for this species."}</p>` : ""}
       <h3>How to read the map</h3>
       <p class="note"><b>Likelihood</b> = habitat × recent weather. <b>Habitat</b> = tree species or pasture type (old pasture vs re-sown), soil acidity, altitude and damp ground.
-      <b>Weather</b> = rain in the right window before the date, temperature, frost, and (for the next few days) satellite-measured soil wetness. Grassland also loses score where satellites saw recent ploughing or frequent silage cuts. Colours show odds, not certainty.</p>
+      <b>Weather</b> = rain in the right window before the date${s.root_zone_d0 ? ` (counted only once the grass-root soil is within ${s.root_zone_d0} mm of full, so after a drought the first rain just refills the soil)` : ""}, temperature, frost, and (for the next few days) satellite-measured soil wetness. Grassland also loses score where satellites saw recent ploughing or frequent silage cuts. Colours show odds, not certainty.</p>
       <p class="warn">Never eat a mushroom on the strength of this map. Get every find checked by an expert (French pharmacists and local mycological societies do this for free). Check local picking limits and ask before entering farmland.</p>
       <p class="note">Data: Open-Meteo, Copernicus (soil water index, grassland ploughing & mowing, Sentinel-2), IGN BD Forêt & RPG farm parcels, ForestPaths tree genera, ESA WorldCover, Copernicus DEM, INRAE/GIS Sol & ISRIC SoilGrids soil pH, GBIF. <a href="data/status.json" style="color:inherit">Build log</a>.</p>`);
   }
@@ -442,6 +462,9 @@
     try { if (S.meta.satellite_wetness) satw = sampleAt(await loadGray(`${S.meta.id}/wx/satwet.png`), lat, lng); } catch { /* */ }
     let bare = null;
     try { if (S.meta.bare_soil && S.meta.bare_soil.used) bare = sampleCell(await loadGray(`${S.meta.id}/wx/bare.png`), lat, lng); } catch { /* */ }
+    let deficit = null;
+    try { if (S.meta.root_zone) deficit = sampleCell(await loadGray(`${S.meta.id}/wx/deficit.png`), lat, lng, true); } catch { /* */ }
+    const drought = droughtNear(lat, lng);
     const ground = {};
     for (const k of (S.meta.ground_layers || [])) {
       try { ground[k] = sampleCell(await loadGray(`${S.meta.id}/wx/${k}.png`), lat, lng); } catch { /* */ }
@@ -473,6 +496,9 @@
       <div class="pop-grid">${rows.map(([s, v]) => `<span>${esc(s.name)}</span><span class="v">${pct(v)}</span>`).join("")}</div>
       <div class="note">Habitat for ${esc(sp().name)}: ${pct(hab)}${rain != null ? ` · rain last 14 days: ${Math.round(rain * 100)}${rain >= 1 ? "+" : ""} mm` : ""}${soil != null ? ` · soil wetness (satellite, ${esc(S.meta.soil_date)}): ${Math.round(soil * 100)}%` : ""}${satw ? ` · vegetation wetter than ${Math.round(satw * 100)}% of similar ground (Sentinel-2)` : ""}</div>
       ${why.length ? `<div class="note"><b>Ground:</b> ${esc(why.join(" · "))}</div>` : ""}
+      ${deficit != null ? (() => { const mm = Math.round(deficit * (S.meta.root_zone.cap || 150)); const d0 = sp().root_zone_d0;
+        return `<div class="note"><b>Root zone:</b> ${mm} mm below full${d0 ? (mm > d0 ? ` · the next ~${mm - d0} mm of rain only refills the soil before it counts for ${esc(sp().name)}` : " · wet enough for rain to count") : ""}</div>`; })() : ""}
+      ${drought && sp().root_zone_d0 ? `<div class="note warn">${esc(droughtText(drought))}</div>` : ""}
       ${outlookHtml}
       <div class="btns"><button class="btn primary" id="saveHere">Save spot</button><a class="btn" href="${navUrl(lat.toFixed(5), lng.toFixed(5))}" target="_blank" rel="noopener">Directions</a></div>`);
     const saveBtn = document.getElementById("saveHere");

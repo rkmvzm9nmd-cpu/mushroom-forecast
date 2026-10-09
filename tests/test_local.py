@@ -9,7 +9,7 @@ import tempfile
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pipeline import run, static_layers, weather, sightings, soil_moisture  # noqa: E402
+from pipeline import bucket, run, static_layers, weather, sightings, soil_moisture  # noqa: E402
 
 calls = []
 
@@ -69,13 +69,24 @@ def fake_fetch(bbox, spacing, tz, batch=25, past_days=31):
     P = np.zeros((T, len(lats), len(lons)), np.float32)
     P[T - 15:T - 12] = 15
     return {"dates": dates, "lats": lats, "lons": lons, "elev": np.full((len(lats), len(lons)), 900, np.float32),
-            "P": P, "Tmax": np.full_like(P, 15.0), "Tmin": np.full_like(P, 6.0)}
+            "P": P, "Tmax": np.full_like(P, 15.0), "Tmin": np.full_like(P, 6.0), "ET0": np.full_like(P, 2.0)}
 
 
 def fake_gbif(species, bbox):
     return {sp["id"]: [{"lat": 44.75, "lon": 3.75, "date": "2025-10-10", "month": 10, "id": 1}] * 6 for sp in species}
 
 
+def fake_cells(bbox, store_dir, today):
+    lats, lons = bucket.cell_axes(bbox)
+    n = 300
+    # dry summer: no rain, 4 mm/day evaporation -> deficit near the 150 mm cap
+    cells = {bucket._key(la, lo): {"start": (dt.date.fromisoformat(today) - dt.timedelta(days=n)).isoformat(),
+                                   "P": np.zeros(n, np.float32), "ET0": np.full(n, 4.0, np.float32)}
+             for la in lats for lo in lons}
+    return lats, lons, cells
+
+
+bucket.load_cells = fake_cells
 static_layers.GROUPS = fake_groups()
 soil_moisture.latest = lambda bbox, lon, lat, today: (
     np.full(lon.shape, 30.0, np.float32), (dt.date.fromisoformat(today) - dt.timedelta(days=2)).isoformat())
@@ -116,3 +127,23 @@ with tempfile.TemporaryDirectory() as tmp:
     print("max scores", {k: v["max"][:4] for k, v in meta["stats"].items()})
     assert meta["weather_ok"] and calls == [92, 92, 92, 92, 31, 31, 31, 31] and meta["sources"]["rpg"]
 print("OK")
+
+
+# --- root-zone bucket unit checks (2026 drought analysis rules)
+D = bucket.run(np.array([[0.0], [40.0]], np.float32), np.array([[3.0], [1.0]], np.float32), np.array([120.0], np.float32))
+assert abs(D[0, 0] - min(150, 120 + 3 * (1 - 120 / 150))) < 1e-4
+before = bucket.before_each_day(D, np.array([120.0], np.float32))
+pe = bucket.effective_rain(np.array([[0.0], [40.0]], np.float32), before, 50)
+assert pe[1, 0] == 0.0, pe          # 40 mm on a 120 mm deficit only refills the soil
+pe2 = bucket.effective_rain(np.array([[40.0]], np.float32), np.array([[60.0]], np.float32), 50)
+assert abs(pe2[0, 0] - 30.0) < 1e-4  # 10 mm refills to D0, 30 mm counts
+from pipeline import scoring  # noqa: E402
+sp = [x for x in run.load_yaml("species.yaml")["species"] if x["id"] == "psilocybe"][0]
+T, Hh, Ww = 40, 2, 2
+Pw = np.zeros((T, Hh, Ww), np.float32); Pw[20:23] = 20.0
+Tmin = np.full_like(Pw, 6.0); Tmax = np.full_like(Pw, 12.0)
+dates = [(dt.date(2026, 10, 1) + dt.timedelta(days=i)).isoformat() for i in range(T)]
+wet = scoring.weather_scores(sp, Pw, Tmin, Tmax, dates, [36], deficit=np.zeros_like(Pw))[0]
+dry = scoring.weather_scores(sp, Pw, Tmin, Tmax, dates, [36], deficit=np.full_like(Pw, 120.0))[0]
+assert wet.max() > 0.1 and dry.max() == 0.0, (wet.max(), dry.max())
+print("bucket OK")

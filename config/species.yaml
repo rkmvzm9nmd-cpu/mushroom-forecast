@@ -22,6 +22,8 @@
 # weather.temp      : trapezoid on the 7-day mean temperature (°C)
 # weather.frost     : 0..1 sensitivity to recent hard frost
 # weather.season    : 12 monthly weights, Jan..Dec
+# weather.root_zone_d0 : optional; rain only counts towards the trigger once the root-zone water
+#                     bucket (150 mm, rain minus evaporation) is refilled to within this many mm
 
 species:
   - id: psilocybe
@@ -42,6 +44,7 @@ species:
     weather:
       lag: [10, 24]
       rain_need: 35
+      root_zone_d0: 50     # rain counts only once the root-zone bucket is within 50 mm of full (2026 drought analysis)
       temp: [2, 5, 12, 16]
       frost: 0.35
       season: [0.2, 0.1, 0.05, 0.05, 0.05, 0.05, 0.1, 0.3, 0.8, 1.0, 1.0, 0.6]

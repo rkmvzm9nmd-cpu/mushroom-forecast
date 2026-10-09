@@ -326,6 +326,97 @@ def fit_timing(sp, points, hist, rng):
     return res
 
 
+# ============================================================== drought years
+CLIMATE_FROM = 1991
+DROUGHT_SHARE = 0.10      # driest 10% of years
+
+
+def _jjas(points, year):
+    params = {"latitude": ",".join(f"{p[0]:.3f}" for p in points),
+              "longitude": ",".join(f"{p[1]:.3f}" for p in points),
+              "start_date": f"{year}-06-01", "end_date": f"{year}-09-30", "timezone": "UTC",
+              "daily": "precipitation_sum,et0_fao_evapotranspiration"}
+    for attempt in range(4):
+        try:
+            r = requests.get(ARCHIVE_API, params=params, timeout=(20, 120))
+            if r.status_code == 200:
+                d = r.json()
+                d = d if isinstance(d, list) else [d]
+                out = []
+                for x in d:
+                    P = [v for v in x["daily"]["precipitation_sum"] if v is not None]
+                    E = [v for v in x["daily"]["et0_fao_evapotranspiration"] if v is not None]
+                    out.append(None if len(P) < 118 or len(E) < 118 else
+                               {"rain": round(sum(P), 1), "balance": round(sum(P) - sum(E), 1)})
+                return out
+            wait = 70 if r.status_code == 429 else 20
+            log.warn(f"climate HTTP {r.status_code}: {r.text[:100]}; retry in {wait}s")
+        except requests.RequestException as exc:
+            wait = 20
+            log.warn(f"climate {exc.__class__.__name__}; retry in {wait}s")
+        time.sleep(wait)
+    return None
+
+
+def drought_years(regions, path, today=None):
+    """June-September rain minus reference evaporation at each reference place, every year
+    since 1991 (ERA5 via Open-Meteo), and this year's rank. Cached in calibration/climate.json;
+    only missing years are fetched, paced to stay inside the free API limits."""
+    today = today or dt.date.today()
+    try:
+        with open(path) as f:
+            clim = json.load(f)
+    except Exception:
+        clim = {}
+    store = clim.setdefault("places", {})
+    last_complete = today.year if today >= dt.date(today.year, 10, 8) else today.year - 1
+    fetched = 0
+    for region in regions:
+        pls = region.get("places", [])
+        if not pls:
+            continue
+        for year in range(CLIMATE_FROM, last_complete + 1):
+            need = [p for p in pls if str(year) not in store.get(p["name"], {})]
+            if not need:
+                continue
+            got = _jjas([(p["lat"], p["lon"]) for p in need], year)
+            fetched += 1
+            if got is None:
+                log.warn(f"climate: {region['id']} {year} not fetched; will retry next run")
+                continue
+            for p, v in zip(need, got):
+                if v is not None:
+                    store.setdefault(p["name"], {})[str(year)] = v
+            time.sleep(25)    # ~35 call-units per request; keeps the first full build under 5,000 an hour
+    out_regions = {}
+    for region in regions:
+        res = {"year": last_complete, "places": {}, "drought_places": []}
+        for p in region.get("places", []):
+            yrs = store.get(p["name"], {})
+            cur = yrs.get(str(last_complete))
+            if cur is None or len(yrs) < 25:
+                continue
+            vals = sorted(v["balance"] for v in yrs.values())
+            rank = 1 + sum(v < cur["balance"] for v in vals)          # 1 = driest
+            normal = [v["balance"] for y, v in yrs.items() if 1991 <= int(y) <= 2020]
+            drought = rank <= max(1, int(DROUGHT_SHARE * len(vals)))
+            res["places"][p["name"]] = {"balance_mm": cur["balance"], "rain_mm": cur["rain"],
+                                        "normal_balance_mm": round(float(np.mean(normal)), 0) if normal else None,
+                                        "rank_driest": rank, "of_years": len(vals), "drought": drought}
+            if drought:
+                res["drought_places"].append(p["name"])
+        out_regions[region["id"]] = res
+        summary = ", ".join("%s %s mm (driest rank %d/%d)" % (k, v["balance_mm"], v["rank_driest"], v["of_years"])
+                            for k, v in res["places"].items())
+        log.info(f"drought check {region['id']} {last_complete}: {summary}")
+    clim["regions"] = out_regions
+    clim["generated"] = today.isoformat()
+    with open(path, "w") as f:
+        json.dump(clim, f, indent=1, ensure_ascii=False)
+    log.info(f"climate: {fetched} requests; written to {path}")
+    return clim
+
+
 def season_weights(counts_sp, counts_all):
     ratio = counts_sp / (counts_all + 1.0)            # species' share of fungi records each month
     sm = 0.5 * ratio + 0.25 * np.roll(ratio, 1) + 0.25 * np.roll(ratio, -1)
@@ -399,6 +490,10 @@ def main():
 
     with open(os.path.join(args.out, "calibration.json"), "w") as f:
         json.dump(cal, f, indent=1)
+    try:
+        drought_years(regions, os.path.join(args.out, "climate.json"))
+    except Exception as exc:
+        log.error("drought-year check failed", exc)
     with open(os.path.join(args.out, "REPORT.md"), "w") as f:
         f.write(report(cal, species))
     with open(os.path.join(args.out, "log.json"), "w") as f:

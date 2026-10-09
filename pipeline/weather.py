@@ -14,7 +14,7 @@ API = "https://api.open-meteo.com/v1/forecast"
 PAST_DAYS = 31
 FORECAST_DAYS = 9
 LAPSE = -0.0065  # degC per metre
-VARS = ["precipitation_sum", "temperature_2m_max", "temperature_2m_min"]
+VARS = ["precipitation_sum", "temperature_2m_max", "temperature_2m_min", "et0_fao_evapotranspiration"]
 
 
 def lattice(bbox, spacing):
@@ -88,7 +88,7 @@ def fetch(bbox, spacing, timezone, batch=25, past_days=PAST_DAYS):
     log.info(f"weather: {len(ok)}/{len(pts)} points fetched, {dates[0]}..{dates[-1]}")
     return {"dates": dates, "lats": lats, "lons": lons, "elev": elev,
             "P": out["precipitation_sum"], "Tmax": out["temperature_2m_max"],
-            "Tmin": out["temperature_2m_min"]}
+            "Tmin": out["temperature_2m_min"], "ET0": out["et0_fao_evapotranspiration"]}
 
 
 def to_grid(wx, lon, lat, elev):
@@ -112,3 +112,13 @@ def to_grid(wx, lon, lat, elev):
         Tmin[t] = interp(wx["Tmin"][t]) + dT
         Tmax[t] = interp(wx["Tmax"][t]) + dT
     return P, Tmin, Tmax
+
+
+def field_to_grid(wx, key, lon, lat):
+    """Interpolate another daily field (e.g. ET0) to the target grid, no elevation correction."""
+    pts = np.stack([lat.ravel(), lon.ravel()], axis=-1)
+    out = np.empty((len(wx["dates"]),) + lat.shape, np.float32)
+    for t in range(len(wx["dates"])):
+        f = RegularGridInterpolator((wx["lats"], wx["lons"]), wx[key][t], bounds_error=False, fill_value=None)
+        out[t] = np.maximum(f(pts).reshape(lat.shape), 0)
+    return out

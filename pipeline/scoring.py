@@ -32,10 +32,20 @@ def soil_factor(swi_pct):
     return np.clip((swi_pct - 15.0) / 25.0, 0.15, 1.0)
 
 
-def weather_scores(sp, P, Tmin, Tmax, dates, day_idx, dry=None, soil=None, soil_weights=None):
-    """Return list of (H, W) arrays, one per index in day_idx."""
+def weather_scores(sp, P, Tmin, Tmax, dates, day_idx, dry=None, soil=None, soil_weights=None,
+                   deficit=None):
+    """Return list of (H, W) arrays, one per index in day_idx.
+
+    deficit: optional root-zone deficit at the START of each day (T, H, W), from bucket.py.
+    For species with `root_zone_d0`, only rain left after refilling the root zone to within
+    d0 mm of full counts towards the trigger, and satellite topsoil wetness cannot override
+    a dry root zone. The 7-day moisture top-up keeps using raw rain."""
     w = sp["weather"]
     lag0, lag1 = w["lag"]
+    d0 = w.get("root_zone_d0")
+    use_bucket = d0 is not None and deficit is not None
+    from . import bucket as bk
+    Prain = bk.effective_rain(P, deficit, d0) if use_bucket else P
     need = float(w["rain_need"])
     wts = lag_weights(lag0, lag1)
     Tmean = (Tmin + Tmax) / 2
@@ -46,7 +56,7 @@ def weather_scores(sp, P, Tmin, Tmax, dates, day_idx, dry=None, soil=None, soil_
         rain = np.zeros(P.shape[1:], np.float32)
         for k, wk in enumerate(wts):
             if wk > 0 and t - k >= 0:
-                rain += wk * P[t - k]
+                rain += wk * Prain[t - k]
         rain_f = np.clip(rain / need, 0, 1)
         # top-up: most species also need some moisture in the last week
         recent = P[max(t - 6, 0):t + 1].sum(axis=0)
@@ -56,7 +66,10 @@ def weather_scores(sp, P, Tmin, Tmax, dates, day_idx, dry=None, soil=None, soil_
         if soil is not None and soil_weights is not None:
             # measured soil wetness takes over from the rain estimate for the next few days
             wgt = soil_weights[len(out)] if len(out) < len(soil_weights) else 0.0
-            moist_f = (1 - wgt) * moist_f + wgt * soil_factor(soil)
+            soil_f = soil_factor(soil)
+            if use_bucket:   # topsoil can look wet after showers while the root zone is still dry
+                soil_f = np.where(deficit[t] > d0, np.minimum(soil_f, bk.refill_factor(deficit[t], d0)), soil_f)
+            moist_f = (1 - wgt) * moist_f + wgt * soil_f
         t7 = Tmean[max(t - 6, 0):t + 1].mean(axis=0)
         temp_f = trapezoid(t7, *w["temp"])
         frost_days = (Tmin[max(t - 3, 0):t + 1] < -1.5).sum(axis=0)

@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import yaml
 
-from . import archive, alerts, features, satellite, soil_moisture, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
+from . import archive, alerts, bucket, features, satellite, soil_moisture, habitat as hab_mod, log, render, scoring, sightings, static_layers, weather
 from .grid import Grid, downsample, upsample
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -84,6 +84,34 @@ def load_sightings(region, species, cache_dir):
     except Exception as exc:
         log.error("GBIF fetch failed", exc)
         return {}
+
+
+CLIMATE = {}
+
+
+def root_zone(region, wx, hlon, hlat, P, dates, t0, rdir):
+    """Root-zone deficit at the start of every day of the live series (T, h, w), seeded from
+    ERA5 half-degree cells; also saves today's deficit map and logs it at reference places."""
+    if "ET0" not in wx:
+        return None, None
+    try:
+        ET0 = weather.field_to_grid(wx, "ET0", hlon, hlat)
+        d_init, cell_d = bucket.initial_deficit(region["bbox"], os.path.join(ARCHIVE_DIR, "bucket"),
+                                               dates[t0], dates[0], hlon, hlat)
+        D = bucket.run(P, ET0, d_init)
+        before = bucket.before_each_day(D, d_init)
+    except Exception as exc:
+        log.warn(f"root-zone bucket unavailable: {exc.__class__.__name__}: {str(exc)[:200]}")
+        return None, None
+    render.save_png(np.clip(before[t0] / bucket.CAP, 0, 1), os.path.join(rdir, "wx", "deficit.png"))
+    info = {"today_mm": {}, "cap": bucket.CAP}
+    for pl in region.get("places", []):
+        r = int(np.argmin(np.abs(hlat[:, 0] - pl["lat"])))
+        c = int(np.argmin(np.abs(hlon[0, :] - pl["lon"])))
+        info["today_mm"][pl["name"]] = round(float(before[t0][r, c]), 0)
+    log.info(f"root-zone deficit today (mm, 150 = bone dry): {info['today_mm']}; "
+             f"region median {np.median(before[t0]):.0f}; seeded at {dates[0]} from ERA5 cells {cell_d}")
+    return before, info
 
 
 def bare_check(region, raw, layers, grid, terr, species):
@@ -222,7 +250,7 @@ def process_region(region, species, out_dir, cache_dir):
     tz = region.get("timezone", "UTC")
     today = dt.datetime.now(ZoneInfo(tz)).date().isoformat()
     dates, scores, weather_ok = [], {}, False
-    soil_date = None
+    soil_date, root_info = None, None
     lon, lat = grid.cell_lonlat()
     try:
         spacing = region.get("weather_spacing", 0.1)
@@ -244,6 +272,7 @@ def process_region(region, species, out_dir, cache_dir):
         day_idx = list(range(t0, len(all_dates)))
         dates = [all_dates[t] for t in day_idx]
         dry = scoring.dry_run_length(P)
+        deficit, root_info = root_zone(region, wx, hlon, hlat, P, all_dates, t0, rdir)
         soil, soil_w, soil_date = None, None, None
         try:
             soil, soil_date = soil_moisture.latest(region["bbox"], hlon, hlat, today)
@@ -263,7 +292,7 @@ def process_region(region, species, out_dir, cache_dir):
             sp_eff, learned = effective_species(sp, region.get("country", "XX"))
             validation[sp["id"]]["learned_timing"] = bool(learned.get("timing"))
             validation[sp["id"]]["learned_season"] = bool(learned.get("season"))
-            Ws = scoring.weather_scores(sp_eff, P, Tmin, Tmax, all_dates, day_idx, dry, soil, soil_w)
+            Ws = scoring.weather_scores(sp_eff, P, Tmin, Tmax, all_dates, day_idx, dry, soil, soil_w, deficit)
             scores[sp["id"]] = []
             for d, W in enumerate(Ws):
                 render.save_png(W, os.path.join(rdir, "wx", f"{sp['id']}_{d}.png"))
@@ -290,7 +319,8 @@ def process_region(region, species, out_dir, cache_dir):
     meta = {
         "id": rid, "name": region["name"], "generated": dt.datetime.now(ZoneInfo(tz)).isoformat(timespec="minutes"),
         "grid": grid.to_json(), "half": HALF, "dates": dates, "weather_ok": weather_ok,
-        "soil_date": soil_date, "satellite_wetness": sat_info, "bare_soil": bare_info, "ground_layers": sorted(ground),
+        "soil_date": soil_date, "satellite_wetness": sat_info, "bare_soil": bare_info, "root_zone": root_info,
+        "drought": (CLIMATE.get("regions", {}).get(rid) if CLIMATE else None), "ground_layers": sorted(ground),
         "places": region.get("places", []), "good_threshold": GOOD,
         "stats": stats, "hotspots": spots, "validation": validation,
         "sources": {"tree_species": (None if not any(("ft_" + k) in layers for k in static_layers.FOREST_TYPES)
@@ -326,6 +356,11 @@ def main():
     regions = load_yaml("regions.yaml")["regions"]
     species = load_yaml("species.yaml")["species"]
     CAL.update(load_calibration())
+    try:
+        with open(os.path.join(ROOT, "calibration", "climate.json")) as f:
+            CLIMATE.update(json.load(f))
+    except Exception:
+        pass
     if CAL:
         log.info(f"using calibration from {CAL.get('generated')}")
     started = time.time()
@@ -337,8 +372,8 @@ def main():
         except Exception as exc:
             log.error(f"region {region['id']} failed", exc)
 
-    public_species = [{k: sp[k] for k in ("id", "name", "latin", "group", "status", "notes", "lookalikes")}
-                      for sp in species]
+    public_species = [dict({k: sp[k] for k in ("id", "name", "latin", "group", "status", "notes", "lookalikes")},
+                           root_zone_d0=sp["weather"].get("root_zone_d0")) for sp in species]
     with open(os.path.join(args.out, "data", "index.json"), "w") as f:
         json.dump({"regions": index, "species": public_species}, f, ensure_ascii=False)
 
