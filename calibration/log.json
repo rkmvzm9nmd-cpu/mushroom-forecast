@@ -1,271 +1,636 @@
 [
  {
-  "t": "19:29:20",
-  "level": "info",
-  "msg": "massif-central-alps: building layer group 'bare_soil'"
- },
- {
-  "t": "19:29:24",
-  "level": "info",
-  "msg": "bare soil: 78 Sentinel-2 scenes planned (7 months, 6 tiles)"
- },
- {
-  "t": "19:34:04",
-  "level": "info",
-  "msg": "bare soil: 78 scenes in 280s; 90% of region with 2+ clear views (median 10 views)"
- },
- {
-  "t": "19:34:45",
+  "t": "18:38:45",
   "level": "info",
   "msg": "massif-central-alps: 3836 target-group background records (all fungi)"
  },
  {
-  "t": "19:34:46",
+  "t": "18:38:46",
   "level": "info",
   "msg": "massif-central-alps boletus: n=104 rule AUC 0.704 fitted (CV) 0.743 -> LEARNED; top: [('rule', 1.418), ('lc_bare', -0.998), ('unmapped_tree', 0.715), ('slope', -0.624), ('ph_sq', 0.624), ('satwet', 0.564)]"
  },
  {
-  "t": "19:34:46",
+  "t": "18:38:47",
   "level": "info",
   "msg": "massif-central-alps cantharellus: n=43 rule AUC 0.589 fitted (CV) 0.682 -> LEARNED; top: [('lc_crop', -2.134), ('lc_water', -1.824), ('pa_temporary', -1.329), ('ph_sq', 1.249), ('lc_bare', -1.189), ('pl_mid', -1.089)]"
  },
  {
-  "t": "19:34:47",
-  "level": "info",
-  "msg": "brasov-fagaras: building layer group 'bare_soil'"
- },
- {
-  "t": "19:34:50",
-  "level": "info",
-  "msg": "bare soil: 83 Sentinel-2 scenes planned (7 months, 6 tiles)"
- },
- {
-  "t": "19:38:56",
-  "level": "info",
-  "msg": "bare soil: 83 scenes in 246s; 100% of region with 2+ clear views (median 12 views)"
- },
- {
-  "t": "19:39:28",
+  "t": "18:39:18",
   "level": "info",
   "msg": "brasov-fagaras: 1368 target-group background records (all fungi)"
  },
  {
-  "t": "19:39:29",
-  "level": "info",
-  "msg": "scotland-south: building layer group 'bare_soil'"
- },
- {
-  "t": "19:39:32",
-  "level": "info",
-  "msg": "bare soil: 123 Sentinel-2 scenes planned (7 months, 9 tiles)"
- },
- {
-  "t": "19:46:48",
-  "level": "info",
-  "msg": "bare soil: 123 scenes in 436s; 88% of region with 2+ clear views (median 7 views)"
- },
- {
-  "t": "19:46:49",
+  "t": "18:39:20",
   "level": "info",
   "msg": "scotland-south: Scottish woodland survey used for 16.4% of cells, Europe-wide tree map elsewhere"
  },
  {
-  "t": "19:47:32",
+  "t": "18:40:09",
   "level": "info",
   "msg": "scotland-south: 3857 target-group background records (all fungi)"
  },
  {
-  "t": "19:47:33",
+  "t": "18:40:09",
   "level": "info",
-  "msg": "scotland-south agaricus: n=96 rule AUC 0.597 fitted (CV) 0.614 -> rules kept; top: [('elev_km', -2.692), ('elev_sq', -2.18), ('lc_crop', -1.467), ('ft_mixedbroad', -1.369), ('ph', 0.813), ('pl_changed', -0.717)]"
+  "msg": "scotland-south agaricus: n=96 rule AUC 0.597 fitted (CV) 0.614 -> rules kept; top: [('elev_km', -2.715), ('elev_sq', -2.203), ('lc_crop', -1.444), ('ft_mixedbroad', -1.351), ('ph', 0.809), ('pl_changed', -0.713)]"
  },
  {
-  "t": "19:47:33",
+  "t": "18:40:10",
   "level": "info",
   "msg": "scotland-south boletus: n=380 rule AUC 0.549 fitted (CV) 0.564 -> rules kept; top: [('elev_km', -3.04), ('elev_sq', -2.891), ('lc_crop', -1.117), ('lc_bare', -0.727), ('pl_changed', -0.45), ('satwet', 0.394)]"
  },
  {
-  "t": "19:47:34",
+  "t": "18:40:11",
   "level": "info",
   "msg": "scotland-south cantharellus: n=340 rule AUC 0.496 fitted (CV) 0.564 -> rules kept; top: [('elev_km', -3.414), ('elev_sq', -2.998), ('lc_crop', -0.783), ('lc_built', -0.558), ('ft_otherbroad', -0.51), ('ft_mixedbroad', -0.493)]"
  },
  {
-  "t": "19:47:34",
+  "t": "18:40:11",
   "level": "info",
   "msg": "scotland-south craterellus_tubaeformis: n=96 rule AUC 0.481 fitted (CV) 0.660 -> LEARNED; top: [('elev_sq', -2.719), ('elev_km', -2.394), ('rule', -2.13), ('lc_crop', -0.961), ('ft_otherbroad', -0.555), ('satwet', 0.508)]"
  },
  {
-  "t": "19:47:35",
+  "t": "18:40:12",
   "level": "info",
   "msg": "scotland-south hydnum: n=276 rule AUC 0.552 fitted (CV) 0.574 -> rules kept; top: [('elev_km', -3.869), ('elev_sq', -3.621), ('lc_crop', -1.07), ('rule', 0.53), ('ph', -0.412), ('pa_tilled', 0.377)]"
  },
  {
-  "t": "19:47:36",
-  "level": "info",
-  "msg": "scotland-highland: building layer group 'bare_soil'"
- },
- {
-  "t": "19:47:39",
-  "level": "info",
-  "msg": "bare soil: 83 Sentinel-2 scenes planned (7 months, 6 tiles)"
- },
- {
-  "t": "19:52:46",
-  "level": "info",
-  "msg": "bare soil: 83 scenes in 307s; 88% of region with 2+ clear views (median 6 views)"
- },
- {
-  "t": "19:52:46",
+  "t": "18:40:13",
   "level": "info",
   "msg": "scotland-highland: Scottish woodland survey used for 21.1% of cells, Europe-wide tree map elsewhere"
  },
  {
-  "t": "19:53:28",
+  "t": "18:41:02",
   "level": "info",
   "msg": "scotland-highland: 5314 target-group background records (all fungi)"
  },
  {
-  "t": "19:53:28",
+  "t": "18:41:02",
   "level": "info",
-  "msg": "scotland-highland psilocybe: n=103 rule AUC 0.680 fitted (CV) 0.573 -> rules kept; top: [('pl_recent', -1.491), ('elev_sq', -1.155), ('pa_permanent', -0.79), ('ft_mixedbroad', 0.547), ('ft_nativepine', 0.541), ('lc_crop', 0.519)]"
+  "msg": "scotland-highland psilocybe: n=103 rule AUC 0.680 fitted (CV) 0.574 -> rules kept; top: [('pl_recent', -1.492), ('elev_sq', -1.153), ('pa_permanent', -0.79), ('ft_mixedbroad', 0.547), ('ft_nativepine', 0.541), ('lc_crop', 0.519)]"
  },
  {
-  "t": "19:53:29",
+  "t": "18:41:03",
   "level": "info",
-  "msg": "scotland-highland agaricus: n=60 rule AUC 0.595 fitted (CV) 0.487 -> rules kept; top: [('ft_oak', -1.866), ('ft_beech', -0.724), ('ft_birch', -0.541), ('elev_sq', -0.476), ('lc_built', 0.462), ('lc_shrub', -0.401)]"
+  "msg": "scotland-highland agaricus: n=60 rule AUC 0.595 fitted (CV) 0.488 -> rules kept; top: [('ft_oak', -1.853), ('ft_beech', -0.719), ('ft_birch', -0.539), ('elev_sq', -0.479), ('lc_built', 0.463), ('lc_shrub', -0.398)]"
  },
  {
-  "t": "19:53:29",
+  "t": "18:41:04",
   "level": "info",
   "msg": "scotland-highland boletus: n=979 rule AUC 0.533 fitted (CV) 0.514 -> rules kept; top: [('elev_sq', -0.516), ('ft_birch', -0.481), ('pa_temporary', -0.389), ('ft_mixed', -0.315), ('ft_oak', -0.297), ('lc_grass', -0.281)]"
  },
  {
-  "t": "19:53:30",
+  "t": "18:41:04",
   "level": "info",
   "msg": "scotland-highland cantharellus: n=1024 rule AUC 0.440 fitted (CV) 0.488 -> rules kept; top: [('pa_temporary', -0.441), ('rule', -0.381), ('ft_mixed', -0.287), ('ft_nativepine', 0.285), ('elev_km', -0.264), ('ft_mixedbroad', -0.261)]"
  },
  {
-  "t": "19:53:30",
+  "t": "18:41:05",
   "level": "info",
   "msg": "scotland-highland craterellus_tubaeformis: n=254 rule AUC 0.645 fitted (CV) 0.590 -> rules kept; top: [('ft_birch', -0.726), ('pa_temporary', -0.562), ('ft_mixedbroad', -0.544), ('ft_beech', -0.492), ('rule', 0.466), ('pa_rough', -0.434)]"
  },
  {
-  "t": "19:53:31",
+  "t": "18:41:05",
   "level": "info",
   "msg": "scotland-highland hydnum: n=467 rule AUC 0.463 fitted (CV) 0.524 -> rules kept; top: [('ft_birch', -0.675), ('ft_mixed', -0.602), ('ph', -0.573), ('pa_temporary', -0.571), ('ph_sq', -0.357), ('slope', 0.291)]"
  },
  {
-  "t": "19:53:31",
+  "t": "18:41:06",
   "level": "info",
   "msg": "weather history: 58 cells cached, fetching 0"
  },
  {
-  "t": "19:53:32",
+  "t": "18:41:06",
   "level": "info",
   "msg": "timing FR psilocybe: n=0 rule test AUC None fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:33",
+  "t": "18:41:07",
   "level": "info",
   "msg": "timing FR agaricus: n=7 rule test AUC None fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:34",
+  "t": "18:41:08",
   "level": "info",
   "msg": "timing FR boletus: n=39 rule test AUC 0.635 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:36",
+  "t": "18:41:11",
   "level": "info",
   "msg": "timing FR cantharellus: n=27 rule test AUC 0.33984375 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:37",
+  "t": "18:41:12",
   "level": "info",
   "msg": "timing FR craterellus_tubaeformis: n=19 rule test AUC 0.6701388888888888 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:38",
+  "t": "18:41:13",
   "level": "info",
   "msg": "timing FR craterellus_cornucopioides: n=9 rule test AUC 0.6796875 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:39",
+  "t": "18:41:14",
   "level": "info",
   "msg": "timing FR hydnum: n=13 rule test AUC None fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:40",
+  "t": "18:41:17",
   "level": "info",
   "msg": "timing RO psilocybe: n=0 rule test AUC None fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:41",
+  "t": "18:41:18",
   "level": "info",
   "msg": "timing RO agaricus: n=2 rule test AUC None fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:42",
+  "t": "18:41:19",
   "level": "info",
   "msg": "timing RO boletus: n=13 rule test AUC 0.50390625 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:44",
+  "t": "18:41:21",
   "level": "info",
   "msg": "timing RO cantharellus: n=8 rule test AUC 0.609375 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:45",
+  "t": "18:41:23",
   "level": "info",
   "msg": "timing RO craterellus_tubaeformis: n=2 rule test AUC None fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:46",
+  "t": "18:41:24",
   "level": "info",
   "msg": "timing RO craterellus_cornucopioides: n=3 rule test AUC None fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:47",
+  "t": "18:41:25",
   "level": "info",
   "msg": "timing RO hydnum: n=0 rule test AUC None fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:49",
+  "t": "18:41:27",
   "level": "info",
   "msg": "timing GB-SCT psilocybe: n=6 rule test AUC 0.19444444444444445 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:50",
+  "t": "18:41:29",
   "level": "info",
   "msg": "timing GB-SCT agaricus: n=34 rule test AUC 0.5945945945945946 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:53:52",
+  "t": "18:41:31",
   "level": "info",
   "msg": "timing GB-SCT boletus: n=372 rule test AUC 0.6699911498400163 fitted test 0.6311185240656273 params {'lag': [14, 19], 'rain_need': 50, 'temp': [6, 9, 19, 22]} -> rules kept"
  },
  {
-  "t": "19:53:55",
+  "t": "18:41:35",
   "level": "info",
   "msg": "timing GB-SCT cantharellus: n=441 rule test AUC 0.5786391906786332 fitted test 0.6169992914501653 params {'lag': [3, 8], 'rain_need': 50, 'temp': [6, 9, 15, 18]} -> LEARNED"
  },
  {
-  "t": "19:53:57",
+  "t": "18:41:37",
   "level": "info",
   "msg": "timing GB-SCT craterellus_tubaeformis: n=80 rule test AUC 0.4882105263157895 fitted test 0.535578947368421 params {'lag': [3, 8], 'rain_need': 35, 'temp': [-4, -1, 13, 16]} -> rules kept"
  },
  {
-  "t": "19:53:58",
+  "t": "18:41:39",
   "level": "info",
   "msg": "timing GB-SCT craterellus_cornucopioides: n=6 rule test AUC 0.49 fitted test None params None -> rules kept"
  },
  {
-  "t": "19:54:00",
+  "t": "18:41:41",
   "level": "info",
   "msg": "timing GB-SCT hydnum: n=178 rule test AUC 0.6382575757575758 fitted test 0.6791125541125541 params {'lag': [10, 15], 'rain_need': 10, 'temp': [4, 7, 13, 16]} -> LEARNED"
  },
  {
-  "t": "19:54:02",
+  "t": "18:42:29",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:44:00",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:45:32",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:46:12",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:47:44",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:50:06",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:50:47",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:52:18",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:54:15",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:54:56",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:56:27",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:58:24",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "18:59:56",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:01:53",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:02:33",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:04:04",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:06:02",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:06:42",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:08:13",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:09:45",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:11:16",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:12:48",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:14:20",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:15:51",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:17:23",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:18:54",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:20:26",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:22:23",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:23:29",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:25:00",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:26:32",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:28:03",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:29:35",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:31:06",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:33:03",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:34:09",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:35:15",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:36:47",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:38:18",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:40:15",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:41:21",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:42:53",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:43:59",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:45:30",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:47:02",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:48:34",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:49:14",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:50:45",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:52:17",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:53:48",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:56:11",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:57:17",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "19:59:15",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:00:20",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:01:26",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:02:58",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:04:55",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:06:01",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:07:32",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:09:04",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:10:36",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:12:09",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:13:41",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:14:47",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:16:44",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:17:24",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:18:56",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:19:37",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:21:08",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:22:40",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:23:20",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:24:52",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:26:49",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:27:55",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:29:27",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:31:24",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:32:55",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:33:35",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:35:33",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:36:13",
+  "level": "warn",
+  "msg": "climate ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "20:36:59",
+  "level": "info",
+  "msg": "drought check massif-central-alps 2026: Chastanier -416.7 mm (driest rank 1/36), Saint-Agrève -388.1 mm (driest rank 1/36), Pilat (Le Bessat) -335.4 mm (driest rank 1/36), Matheysine (La Mure) -371.2 mm (driest rank 1/36)"
+ },
+ {
+  "t": "20:36:59",
+  "level": "info",
+  "msg": "drought check brasov-fagaras 2026: Brașov -236.1 mm (driest rank 4/36), Viștea / Viștișoara -264.3 mm (driest rank 3/36), Poiana Brașov -157.6 mm (driest rank 3/36), Zărnești -261.3 mm (driest rank 2/36)"
+ },
+ {
+  "t": "20:36:59",
+  "level": "info",
+  "msg": "drought check scotland-south 2026: Edinburgh -34.3 mm (driest rank 18/36), Peebles 122.2 mm (driest rank 27/36), Moffat 350.2 mm (driest rank 31/36), Glentrool 444.6 mm (driest rank 33/36)"
+ },
+ {
+  "t": "20:36:59",
+  "level": "info",
+  "msg": "drought check scotland-highland 2026: Pitlochry 17.8 mm (driest rank 9/36), Aberfeldy 75.6 mm (driest rank 18/36), Aviemore 23.3 mm (driest rank 12/36), Braemar 64.8 mm (driest rank 15/36)"
+ },
+ {
+  "t": "20:36:59",
+  "level": "info",
+  "msg": "climate: 144 requests; written to calibration/climate.json"
+ },
+ {
+  "t": "20:36:59",
   "level": "info",
   "msg": "calibration written"
  }

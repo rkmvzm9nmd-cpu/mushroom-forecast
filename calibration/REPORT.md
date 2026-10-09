@@ -1,4 +1,4 @@
-# Model calibration (2026-10-08T19:29Z)
+# Model calibration (2026-10-09T18:37Z)
 
 AUC = how often a real find scores above a comparison point (0.5 = no skill, 1 = perfect).
 Habitat: finds vs all fungi records in the region (spatial cross-validation).
