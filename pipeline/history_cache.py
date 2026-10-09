@@ -72,9 +72,14 @@ def get(th, params, nvars):
             log.warn(f"archive {exc.__class__.__name__}; retry")
             time.sleep(30 * (attempt + 1))
             continue
-        if r.status_code == 200:
-            return r.json()
         text = r.text[:200]
+        if r.status_code == 200:
+            try:
+                return r.json()
+            except ValueError:
+                log.warn(f"archive returned non-JSON ({text!r}); retry")
+                time.sleep(60 * (attempt + 1))
+                continue
         if r.status_code == 429:
             if "Daily" in text:
                 raise DailyLimit(text)
@@ -167,7 +172,10 @@ def _soil_years(th, rows, have, lat, lon, y0, stop):
                      "timezone": "UTC"}, len(SOIL))
         if d is None:
             break
-        h = d["hourly"]
+        h = d.get("hourly")
+        if not h:
+            log.warn(f"soil {y}: no hourly block in response ({str(d)[:150]})")
+            break
         days = {}
         for i, t in enumerate(h["time"]):
             days.setdefault(t[:10], []).append([h[v][i] for v in SOIL])
@@ -213,16 +221,32 @@ def main():
                 lon += 0.5
             lat += 0.5
     log.info(f"{reg['name']}: {len(jobs)} files to check, up to {end}")
-    for kind, path, lat, lon, start in jobs:
-        try:
-            if kind == "daily":
-                msg = fetch_daily(th, path, lat, lon, start, end)
-            else:
-                msg = fetch_soil(th, path, lat, lon, start, end)
-            log.info(f"{os.path.basename(path)}: {msg}")
-        except DailyLimit as exc:
-            log.warn(f"daily allowance used up ({exc}); stopping, next run resumes")
-            break
+    fails = 0
+    try:
+        for kind, path, lat, lon, start in jobs:
+            try:
+                if kind == "daily":
+                    msg = fetch_daily(th, path, lat, lon, start, end)
+                else:
+                    msg = fetch_soil(th, path, lat, lon, start, end)
+                log.info(f"{os.path.basename(path)}: {msg}")
+                fails = 0
+            except DailyLimit as exc:
+                log.warn(f"daily allowance used up ({exc}); stopping, next run resumes")
+                break
+            except Exception as exc:  # keep going; the log says what broke
+                log.error(f"{os.path.basename(path)} failed", exc)
+                fails += 1
+                if fails >= 3:
+                    log.warn("three failures in a row; stopping, next run resumes")
+                    break
+    finally:
+        # the run log travels with the data, so failures can be read without the Actions UI
+        tag = a.parts.replace(",", "+")
+        with open(os.path.join(out, f"_log_{tag}.txt"), "a") as f:
+            f.write(f"=== run {dt.datetime.utcnow():%Y-%m-%d %H:%M} UTC, parts {a.parts}\n")
+            for e in log.ENTRIES:
+                f.write(f"[{e['t']}] {e['level'].upper():5s} {e['msg']}\n")
 
 
 if __name__ == "__main__":

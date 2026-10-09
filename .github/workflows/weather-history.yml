@@ -66,7 +66,7 @@ jobs:
           mkdir -p data
           # each job carries the whole archive; keep the longest copy of every file
           cd parts
-          find . -name "*.csv" | while read f; do
+          find . \( -name "*.csv" -o -name "_log_*.txt" \) | while read f; do
             rel="${f#./*/}"; dst="../data/$rel"; mkdir -p "$(dirname "$dst")"
             if [ ! -f "$dst" ] || [ "$(wc -l < "$f")" -gt "$(wc -l < "$dst")" ]; then cp "$f" "$dst"; fi
           done
