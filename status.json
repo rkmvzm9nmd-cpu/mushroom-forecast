@@ -1,0 +1,421 @@
+{
+ "finished": "2026-10-10T03:54:01Z",
+ "seconds": 1298,
+ "log": [
+  {
+   "t": "03:32:23",
+   "level": "info",
+   "msg": "using calibration from 2026-10-09T18:37Z"
+  },
+  {
+   "t": "03:32:23",
+   "level": "info",
+   "msg": "massif-central-alps: grid 2040x1339 px at zoom 10"
+  },
+  {
+   "t": "03:32:28",
+   "level": "info",
+   "msg": "massif-central-alps: bare-soil check vs declared parcels: {'pasture_flagged': 0.025, 'arable_flagged': 0.334} -> USED"
+  },
+  {
+   "t": "03:32:29",
+   "level": "info",
+   "msg": "bare soil on declared permanent pasture: mean 0.02, >=10% in 3%, >=35% in 1% of 404981 pixels"
+  },
+  {
+   "t": "03:32:29",
+   "level": "info",
+   "msg": "bare soil on declared arable: mean 0.10, >=10% in 33%, >=35% in 5% of 208041 pixels"
+  },
+  {
+   "t": "03:32:29",
+   "level": "info",
+   "msg": "psilocybe: bare-soil check would remove 3.1 of 4414.7 km2 of good habitat; Chastanier (3 km): 0/1611 px [good px: satellite-checked 100%, bare>=10% 0%, median clear views 17, permanent 85%, rough 0%, temporary 2%, tilled 2%, ploughed-map 0%]; Saint-Agrève (3 km): 0/828 px [good px: satellite-checked 100%, bare>=10% 0%, median clear views 20, permanent 75%, rough 5%, temporary 2%, tilled 1%, ploughed-map 0%]; Pilat (Le Bessat) (3 km): 0/347 px [good px: satellite-checked 100%, bare>=10% 0%, median clear views 19, permanent 74%, rough 1%, temporary 2%, tilled 1%, ploughed-map 0%]; Matheysine (La Mure) (3 km): 2/879 px [good px: satellite-checked 100%, bare>=10% 1%, median clear views 40, permanent 80%, rough 4%, temporary 1%, tilled 2%, ploughed-map 0%]"
+  },
+  {
+   "t": "03:32:29",
+   "level": "info",
+   "msg": "agaricus: bare-soil check would remove 9.7 of 7838.4 km2 of good habitat; Chastanier (3 km): 0/2176 px; Saint-Agrève (3 km): 0/1098 px; Pilat (Le Bessat) (3 km): 0/503 px; Matheysine (La Mure) (3 km): 2/1330 px"
+  },
+  {
+   "t": "03:32:34",
+   "level": "info",
+   "msg": "habitat check vs GBIF finds (AUC, 0.5 = no skill): psilocybe None (n=3), agaricus 0.821 (n=12), boletus 0.893 (n=104), cantharellus 0.796 (n=43), craterellus_tubaeformis 0.876 (n=31), craterellus_cornucopioides 0.828 (n=15), hydnum 0.828 (n=39)"
+  },
+  {
+   "t": "03:32:34",
+   "level": "info",
+   "msg": "with satellite wetness: psilocybe None, agaricus 0.821, boletus None, cantharellus None, craterellus_tubaeformis 0.872, craterellus_cornucopioides 0.856 -> USED, hydnum 0.827"
+  },
+  {
+   "t": "03:33:06",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:33:42",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 30s"
+  },
+  {
+   "t": "03:34:40",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:35:33",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:36:19",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:36:54",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 30s"
+  },
+  {
+   "t": "03:37:56",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:38:18",
+   "level": "info",
+   "msg": "weather: 406/406 points fetched, 2026-09-09..2026-10-18"
+  },
+  {
+   "t": "03:38:18",
+   "level": "info",
+   "msg": "weather archive: 95 days held (2026-07-07..2026-10-09)"
+  },
+  {
+   "t": "03:38:50",
+   "level": "warn",
+   "msg": "bucket seed ReadTimeout; retry in 20s"
+  },
+  {
+   "t": "03:39:30",
+   "level": "warn",
+   "msg": "bucket seed ReadTimeout; retry in 20s"
+  },
+  {
+   "t": "03:40:24",
+   "level": "warn",
+   "msg": "bucket seed ReadTimeout; retry in 20s"
+  },
+  {
+   "t": "03:41:04",
+   "level": "warn",
+   "msg": "bucket seed ReadTimeout; retry in 20s"
+  },
+  {
+   "t": "03:41:28",
+   "level": "info",
+   "msg": "root-zone deficit today (mm, 150 = bone dry): {'Chastanier': 38.0, 'Saint-Agrève': 9.0, 'Pilat (Le Bessat)': 43.0, 'Matheysine (La Mure)': 24.0}; region median 40; seeded at 2026-09-09 from ERA5 cells {'44.0_3.0': 129.2, '44.0_3.5': 110.5, '44.0_4.0': 104.6, '44.0_4.5': 116.0, '44.0_5.0': 127.0, '44.0_5.5': 115.2, '44.0_6.0': 117.9, '44.0_6.5': 97.3, '44.5_3.0': 104.9, '44.5_3.5': 110.6, '44.5_4.0': 92.2, '44.5_4.5': 103.3, '44.5_5.0': 96.1, '44.5_5.5': 93.9, '44.5_6.0': 98.1, '44.5_6.5': 75.7, '45.0_3.0': 75.8, '45.0_3.5': 100.0, '45.0_4.0': 109.7, '45.0_4.5': 93.6, '45.0_5.0': 92.3, '45.0_5.5': 63.8, '45.0_6.0': 36.5, '45.0_6.5': 62.2, '45.5_3.0': 75.6, '45.5_3.5': 81.8, '45.5_4.0': 90.3, '45.5_4.5': 95.4, '45.5_5.0': 89.2, '45.5_5.5': 84.4, '45.5_6.0': 31.6, '45.5_6.5': 62.7, '46.0_3.0': 93.3, '46.0_3.5': 103.3, '46.0_4.0': 106.3, '46.0_4.5': 116.3, '46.0_5.0': 110.3, '46.0_5.5': 62.0, '46.0_6.0': 76.4, '46.0_6.5': 29.4}"
+  },
+  {
+   "t": "03:41:29",
+   "level": "info",
+   "msg": "soil water index (clms_swi_europe_1km_daily_v2_cog): newest product 2026-09-14"
+  },
+  {
+   "t": "03:41:30",
+   "level": "info",
+   "msg": "soil water index v1 (clms_swi_europe_1km_daily_v1_cog): newest product 2025-07-11"
+  },
+  {
+   "t": "03:41:31",
+   "level": "info",
+   "msg": "surface soil moisture (clms_ssm_europe_1km_daily_v1_cog): newest product 2026-09-15"
+  },
+  {
+   "t": "03:41:31",
+   "level": "warn",
+   "msg": "soil moisture unavailable: RuntimeError: no soil moisture product from the last 10 days"
+  },
+  {
+   "t": "03:42:17",
+   "level": "info",
+   "msg": "brasov-fagaras: grid 1166x836 px at zoom 10"
+  },
+  {
+   "t": "03:42:17",
+   "level": "info",
+   "msg": "brasov-fagaras: bare-soil check vs land-cover map: {'pasture_flagged': 0.036, 'arable_flagged': 0.325} -> USED"
+  },
+  {
+   "t": "03:42:18",
+   "level": "info",
+   "msg": "psilocybe: bare-soil check would remove 14.3 of 2110.4 km2 of good habitat; Brașov (3 km): 5/62 px [good px: satellite-checked 100%, bare>=10% 15%, median clear views 35, ploughed-map 0%]; Viștea / Viștișoara (3 km): 2/502 px [good px: satellite-checked 100%, bare>=10% 0%, median clear views 35, ploughed-map 0%]; Poiana Brașov (3 km): 0/196 px [good px: satellite-checked 100%, bare>=10% 0%, median clear views 34, ploughed-map 0%]; Zărnești (3 km): 0/867 px [good px: satellite-checked 100%, bare>=10% 0%, median clear views 35, ploughed-map 0%]"
+  },
+  {
+   "t": "03:42:18",
+   "level": "info",
+   "msg": "agaricus: bare-soil check would remove 14.9 of 2517.4 km2 of good habitat; Brașov (3 km): 11/90 px; Viștea / Viștișoara (3 km): 1/730 px; Poiana Brașov (3 km): 0/182 px; Zărnești (3 km): 0/957 px"
+  },
+  {
+   "t": "03:42:19",
+   "level": "info",
+   "msg": "habitat check vs GBIF finds (AUC, 0.5 = no skill): psilocybe None (n=0), agaricus None (n=2), boletus 0.807 (n=22), cantharellus 0.738 (n=10), craterellus_tubaeformis None (n=2), craterellus_cornucopioides None (n=4), hydnum None (n=0)"
+  },
+  {
+   "t": "03:42:19",
+   "level": "info",
+   "msg": "with satellite wetness: psilocybe None, agaricus None, boletus 0.777, cantharellus 0.701, craterellus_tubaeformis None, craterellus_cornucopioides None, hydnum None"
+  },
+  {
+   "t": "03:42:45",
+   "level": "info",
+   "msg": "weather: 153/153 points fetched, 2026-09-09..2026-10-18"
+  },
+  {
+   "t": "03:42:45",
+   "level": "info",
+   "msg": "weather archive: 94 days held (2026-07-08..2026-10-09)"
+  },
+  {
+   "t": "03:43:13",
+   "level": "warn",
+   "msg": "bucket seed ReadTimeout; retry in 20s"
+  },
+  {
+   "t": "03:43:41",
+   "level": "info",
+   "msg": "root-zone deficit today (mm, 150 = bone dry): {'Brașov': 80.0, 'Viștea / Viștișoara': 84.0, 'Poiana Brașov': 78.0, 'Zărnești': 78.0}; region median 82; seeded at 2026-09-09 from ERA5 cells {'45.0_24.0': 114.5, '45.0_24.5': 116.6, '45.0_25.0': 98.9, '45.0_25.5': 91.1, '45.0_26.0': 75.5, '45.5_24.0': 24.9, '45.5_24.5': 20.7, '45.5_25.0': 13.2, '45.5_25.5': 59.0, '45.5_26.0': 38.1, '46.0_24.0': 104.1, '46.0_24.5': 99.3, '46.0_25.0': 89.3, '46.0_25.5': 70.0, '46.0_26.0': 64.1, '46.5_24.0': 113.9, '46.5_24.5': 101.6, '46.5_25.0': 81.8, '46.5_25.5': 49.9, '46.5_26.0': 60.2}"
+  },
+  {
+   "t": "03:43:41",
+   "level": "info",
+   "msg": "soil water index (clms_swi_europe_1km_daily_v2_cog): newest product 2026-09-14"
+  },
+  {
+   "t": "03:43:42",
+   "level": "info",
+   "msg": "soil water index v1 (clms_swi_europe_1km_daily_v1_cog): newest product 2025-07-11"
+  },
+  {
+   "t": "03:43:42",
+   "level": "info",
+   "msg": "surface soil moisture (clms_ssm_europe_1km_daily_v1_cog): newest product 2026-09-15"
+  },
+  {
+   "t": "03:43:42",
+   "level": "warn",
+   "msg": "soil moisture unavailable: RuntimeError: no soil moisture product from the last 10 days"
+  },
+  {
+   "t": "03:44:03",
+   "level": "info",
+   "msg": "scotland-south: grid 2185x1544 px at zoom 10"
+  },
+  {
+   "t": "03:44:03",
+   "level": "info",
+   "msg": "scotland-south: Scottish woodland survey used for 16.4% of cells, Europe-wide tree map elsewhere"
+  },
+  {
+   "t": "03:44:06",
+   "level": "info",
+   "msg": "scotland-south: bare-soil check vs declared parcels: {'pasture_flagged': 0.002, 'arable_flagged': 0.101} -> USED"
+  },
+  {
+   "t": "03:44:07",
+   "level": "info",
+   "msg": "bare soil on declared permanent pasture: mean 0.01, >=10% in 0%, >=35% in 0% of 40908 pixels"
+  },
+  {
+   "t": "03:44:07",
+   "level": "info",
+   "msg": "bare soil on declared arable: mean 0.03, >=10% in 10%, >=35% in 1% of 856061 pixels"
+  },
+  {
+   "t": "03:44:07",
+   "level": "info",
+   "msg": "psilocybe: bare-soil check would remove 0.1 of 29.1 km2 of good habitat; Glentrool (3 km): 0/58 px [good px: satellite-checked 100%, bare>=10% 0%, median clear views 24, permanent 0%, rough 0%, temporary 0%, tilled 0%, ploughed-map 0%]"
+  },
+  {
+   "t": "03:44:07",
+   "level": "info",
+   "msg": "agaricus: bare-soil check would remove 5.2 of 1945.3 km2 of good habitat; Edinburgh (3 km): 1/333 px; Peebles (3 km): 0/317 px; Moffat (3 km): 0/275 px; Glentrool (3 km): 2/25 px"
+  },
+  {
+   "t": "03:44:15",
+   "level": "info",
+   "msg": "habitat check vs GBIF finds (AUC, 0.5 = no skill): psilocybe 0.507 (n=8), agaricus 0.789 (n=96), boletus 0.642 (n=380), cantharellus 0.775 (n=340), craterellus_tubaeformis 0.479 (n=96), craterellus_cornucopioides 0.86 (n=22), hydnum 0.822 (n=276)"
+  },
+  {
+   "t": "03:44:15",
+   "level": "info",
+   "msg": "with satellite wetness: psilocybe 0.505, agaricus 0.788, boletus 0.642, cantharellus 0.774, craterellus_tubaeformis None, craterellus_cornucopioides 0.857, hydnum 0.821"
+  },
+  {
+   "t": "03:44:39",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:45:21",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:46:00",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:46:35",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 30s"
+  },
+  {
+   "t": "03:47:20",
+   "level": "info",
+   "msg": "weather: 189/189 points fetched, 2026-09-09..2026-10-18"
+  },
+  {
+   "t": "03:47:20",
+   "level": "info",
+   "msg": "weather archive: 94 days held (2026-07-08..2026-10-09)"
+  },
+  {
+   "t": "03:47:53",
+   "level": "warn",
+   "msg": "bucket seed ReadTimeout; retry in 20s"
+  },
+  {
+   "t": "03:48:27",
+   "level": "info",
+   "msg": "root-zone deficit today (mm, 150 = bone dry): {'Edinburgh': 22.0, 'Peebles': 0.0, 'Moffat': 0.0, 'Glentrool': 0.0}; region median 0; seeded at 2026-09-09 from ERA5 cells {'54.5_-5.0': 34.1, '54.5_-4.5': 42.6, '54.5_-4.0': 31.7, '54.5_-3.5': 0.0, '54.5_-3.0': 0.0, '54.5_-2.5': 13.2, '54.5_-2.0': 34.5, '55.0_-5.0': 0.0, '55.0_-4.5': 0.0, '55.0_-4.0': 1.4, '55.0_-3.5': 1.5, '55.0_-3.0': 1.5, '55.0_-2.5': 0.0, '55.0_-2.0': 42.0, '55.5_-5.0': 0.0, '55.5_-4.5': 0.0, '55.5_-4.0': 0.0, '55.5_-3.5': 0.0, '55.5_-3.0': 0.5, '55.5_-2.5': 20.5, '55.5_-2.0': 3.7, '56.0_-5.0': 0.0, '56.0_-4.5': 0.0, '56.0_-4.0': 0.0, '56.0_-3.5': 1.2, '56.0_-3.0': 29.7, '56.0_-2.5': 20.7, '56.0_-2.0': 8.1, '56.5_-5.0': 0.0, '56.5_-4.5': 0.0, '56.5_-4.0': 0.0, '56.5_-3.5': 21.4, '56.5_-3.0': 27.4, '56.5_-2.5': 42.9, '56.5_-2.0': 82.1}"
+  },
+  {
+   "t": "03:48:28",
+   "level": "info",
+   "msg": "soil water index (clms_swi_europe_1km_daily_v2_cog): newest product 2026-09-14"
+  },
+  {
+   "t": "03:48:29",
+   "level": "info",
+   "msg": "soil water index v1 (clms_swi_europe_1km_daily_v1_cog): newest product 2025-07-11"
+  },
+  {
+   "t": "03:48:30",
+   "level": "info",
+   "msg": "surface soil moisture (clms_ssm_europe_1km_daily_v1_cog): newest product 2026-09-15"
+  },
+  {
+   "t": "03:48:30",
+   "level": "warn",
+   "msg": "soil moisture unavailable: RuntimeError: no soil moisture product from the last 10 days"
+  },
+  {
+   "t": "03:49:37",
+   "level": "info",
+   "msg": "scotland-highland: grid 1894x1728 px at zoom 10"
+  },
+  {
+   "t": "03:49:37",
+   "level": "info",
+   "msg": "scotland-highland: Scottish woodland survey used for 21.1% of cells, Europe-wide tree map elsewhere"
+  },
+  {
+   "t": "03:49:40",
+   "level": "info",
+   "msg": "scotland-highland: bare-soil check vs declared parcels: {'pasture_flagged': 0.015, 'arable_flagged': 0.292} -> USED"
+  },
+  {
+   "t": "03:49:40",
+   "level": "info",
+   "msg": "bare soil on declared permanent pasture: mean 0.01, >=10% in 2%, >=35% in 0% of 108316 pixels"
+  },
+  {
+   "t": "03:49:40",
+   "level": "info",
+   "msg": "bare soil on declared arable: mean 0.08, >=10% in 29%, >=35% in 6% of 568694 pixels"
+  },
+  {
+   "t": "03:49:41",
+   "level": "info",
+   "msg": "psilocybe: bare-soil check would remove 10.3 of 223.7 km2 of good habitat; Aviemore (3 km): 0/2 px [good px: satellite-checked 100%, bare>=10% 0%, median clear views 15, permanent 100%, rough 0%, temporary 0%, tilled 0%, ploughed-map 0%]; Braemar (3 km): 7/244 px [good px: satellite-checked 100%, bare>=10% 6%, median clear views 12, permanent 22%, rough 63%, temporary 0%, tilled 0%, ploughed-map 0%]"
+  },
+  {
+   "t": "03:49:41",
+   "level": "info",
+   "msg": "agaricus: bare-soil check would remove 1.9 of 343.9 km2 of good habitat; Pitlochry (3 km): 0/55 px; Aberfeldy (3 km): 0/105 px; Aviemore (3 km): 0/103 px; Braemar (3 km): 0/65 px"
+  },
+  {
+   "t": "03:49:46",
+   "level": "info",
+   "msg": "habitat check vs GBIF finds (AUC, 0.5 = no skill): psilocybe 0.684 (n=103), agaricus 0.736 (n=60), boletus 0.815 (n=979), cantharellus 0.848 (n=1024), craterellus_tubaeformis 0.668 (n=254), craterellus_cornucopioides 0.676 (n=11), hydnum 0.831 (n=467)"
+  },
+  {
+   "t": "03:49:46",
+   "level": "info",
+   "msg": "with satellite wetness: psilocybe 0.68, agaricus 0.736, boletus 0.814, cantharellus 0.848, craterellus_tubaeformis 0.668, craterellus_cornucopioides 0.674, hydnum 0.831"
+  },
+  {
+   "t": "03:50:17",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:51:03",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 15s"
+  },
+  {
+   "t": "03:51:38",
+   "level": "warn",
+   "msg": "open-meteo ReadTimeout; retry in 30s"
+  },
+  {
+   "t": "03:52:16",
+   "level": "info",
+   "msg": "weather: 180/180 points fetched, 2026-09-09..2026-10-18"
+  },
+  {
+   "t": "03:52:16",
+   "level": "info",
+   "msg": "weather archive: 94 days held (2026-07-08..2026-10-09)"
+  },
+  {
+   "t": "03:52:48",
+   "level": "warn",
+   "msg": "bucket seed ReadTimeout; retry in 20s"
+  },
+  {
+   "t": "03:53:12",
+   "level": "info",
+   "msg": "root-zone deficit today (mm, 150 = bone dry): {'Pitlochry': 0.0, 'Aberfeldy': 0.0, 'Aviemore': 0.0, 'Braemar': 0.0}; region median 0; seeded at 2026-09-09 from ERA5 cells {'56.0_-5.0': 0.0, '56.0_-4.5': 0.0, '56.0_-4.0': 0.0, '56.0_-3.5': 1.2, '56.0_-3.0': 29.7, '56.0_-2.5': 20.7, '56.0_-2.0': 8.1, '56.5_-5.0': 0.0, '56.5_-4.5': 0.0, '56.5_-4.0': 0.0, '56.5_-3.5': 21.4, '56.5_-3.0': 27.4, '56.5_-2.5': 42.9, '56.5_-2.0': 82.1, '57.0_-5.0': 0.0, '57.0_-4.5': 0.0, '57.0_-4.0': 0.0, '57.0_-3.5': 0.0, '57.0_-3.0': 0.0, '57.0_-2.5': 5.3, '57.0_-2.0': 16.5, '57.5_-5.0': 0.0, '57.5_-4.5': 0.0, '57.5_-4.0': 0.0, '57.5_-3.5': 0.0, '57.5_-3.0': 0.0, '57.5_-2.5': 0.0, '57.5_-2.0': 0.9}"
+  },
+  {
+   "t": "03:53:13",
+   "level": "info",
+   "msg": "soil water index (clms_swi_europe_1km_daily_v2_cog): newest product 2026-09-14"
+  },
+  {
+   "t": "03:53:14",
+   "level": "info",
+   "msg": "soil water index v1 (clms_swi_europe_1km_daily_v1_cog): newest product 2025-07-11"
+  },
+  {
+   "t": "03:53:14",
+   "level": "info",
+   "msg": "surface soil moisture (clms_ssm_europe_1km_daily_v1_cog): newest product 2026-09-15"
+  },
+  {
+   "t": "03:53:14",
+   "level": "warn",
+   "msg": "soil moisture unavailable: RuntimeError: no soil moisture product from the last 10 days"
+  },
+  {
+   "t": "03:54:01",
+   "level": "info",
+   "msg": "alerts: nothing above threshold today"
+  }
+ ]
+}
