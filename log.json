@@ -1,0 +1,262 @@
+[
+ {
+  "t": "02:29:34",
+  "level": "info",
+  "msg": "massif-central-alps: 3836 target-group background records (all fungi)"
+ },
+ {
+  "t": "02:29:34",
+  "level": "info",
+  "msg": "massif-central-alps boletus: n=105 rule AUC 0.702 fitted (CV) 0.733 -> LEARNED; top: [('rule', 1.191), ('lc_bare', -1.024), ('unmapped_tree', 0.713), ('slope', -0.65), ('satwet', 0.596), ('elev_km', 0.569)]"
+ },
+ {
+  "t": "02:29:35",
+  "level": "info",
+  "msg": "massif-central-alps cantharellus: n=43 rule AUC 0.589 fitted (CV) 0.691 -> LEARNED; top: [('lc_crop', -2.169), ('lc_water', -1.784), ('pa_temporary', -1.372), ('ph_sq', 1.172), ('lc_bare', -1.119), ('pl_mid', -1.029)]"
+ },
+ {
+  "t": "02:30:01",
+  "level": "info",
+  "msg": "brasov-fagaras: 1368 target-group background records (all fungi)"
+ },
+ {
+  "t": "02:30:02",
+  "level": "info",
+  "msg": "scotland-south: Scottish woodland survey used for 16.4% of cells, Europe-wide tree map elsewhere"
+ },
+ {
+  "t": "02:30:39",
+  "level": "info",
+  "msg": "scotland-south: 3987 target-group background records (all fungi)"
+ },
+ {
+  "t": "02:30:39",
+  "level": "info",
+  "msg": "scotland-south agaricus: n=96 rule AUC 0.594 fitted (CV) 0.601 -> rules kept; top: [('elev_km', -2.877), ('elev_sq', -2.199), ('lc_crop', -1.393), ('ft_mixedbroad', -1.088), ('ph', 0.787), ('pl_changed', -0.736)]"
+ },
+ {
+  "t": "02:30:40",
+  "level": "info",
+  "msg": "scotland-south boletus: n=384 rule AUC 0.541 fitted (CV) 0.583 -> rules kept; top: [('elev_km', -3.234), ('elev_sq', -3.012), ('lc_crop', -1.007), ('lc_bare', -0.752), ('pl_changed', -0.507), ('ft_beech', -0.343)]"
+ },
+ {
+  "t": "02:30:40",
+  "level": "info",
+  "msg": "scotland-south cantharellus: n=340 rule AUC 0.504 fitted (CV) 0.569 -> rules kept; top: [('elev_km', -3.597), ('elev_sq', -3.05), ('lc_crop', -0.677), ('ft_otherbroad', -0.497), ('rule', 0.432), ('lc_built', -0.421)]"
+ },
+ {
+  "t": "02:30:40",
+  "level": "info",
+  "msg": "scotland-south craterellus_tubaeformis: n=96 rule AUC 0.472 fitted (CV) 0.642 -> LEARNED; top: [('elev_sq', -2.825), ('elev_km', -2.591), ('rule', -2.506), ('lc_crop', -0.851), ('ft_otherbroad', -0.552), ('pa_tilled', 0.501)]"
+ },
+ {
+  "t": "02:30:41",
+  "level": "info",
+  "msg": "scotland-south hydnum: n=277 rule AUC 0.561 fitted (CV) 0.593 -> rules kept; top: [('elev_km', -4.036), ('elev_sq', -3.688), ('lc_crop', -0.933), ('rule', 0.525), ('lc_grass', 0.475), ('pa_tilled', 0.43)]"
+ },
+ {
+  "t": "02:30:42",
+  "level": "info",
+  "msg": "scotland-highland: Scottish woodland survey used for 21.1% of cells, Europe-wide tree map elsewhere"
+ },
+ {
+  "t": "02:31:18",
+  "level": "info",
+  "msg": "scotland-highland: 5435 target-group background records (all fungi)"
+ },
+ {
+  "t": "02:31:19",
+  "level": "info",
+  "msg": "scotland-highland psilocybe: n=103 rule AUC 0.686 fitted (CV) 0.691 -> rules kept; top: [('pl_recent', -1.637), ('elev_km', 0.838), ('ft_nativepine', 0.773), ('damp', 0.664), ('ft_mixedbroad', 0.572), ('elev_sq', -0.541)]"
+ },
+ {
+  "t": "02:31:19",
+  "level": "info",
+  "msg": "scotland-highland agaricus: n=60 rule AUC 0.618 fitted (CV) 0.536 -> rules kept; top: [('ft_oak', -1.542), ('pl_recent', -0.535), ('satwet', 0.488), ('pl_changed', 0.478), ('lc_built', 0.462), ('ft_birch', -0.441)]"
+ },
+ {
+  "t": "02:31:19",
+  "level": "info",
+  "msg": "scotland-highland boletus: n=980 rule AUC 0.533 fitted (CV) 0.517 -> rules kept; top: [('ft_birch', -0.391), ('pa_temporary', -0.349), ('pl_recent', -0.319), ('elev_km', 0.285), ('ft_mixed', -0.217), ('damp', 0.2)]"
+ },
+ {
+  "t": "02:31:20",
+  "level": "info",
+  "msg": "scotland-highland cantharellus: n=1024 rule AUC 0.448 fitted (CV) 0.524 -> rules kept; top: [('ft_nativepine', 0.417), ('pl_recent', -0.381), ('rule', -0.361), ('pa_temporary', -0.361), ('elev_sq', 0.273), ('lc_crop', 0.25)]"
+ },
+ {
+  "t": "02:31:20",
+  "level": "info",
+  "msg": "scotland-highland craterellus_tubaeformis: n=254 rule AUC 0.633 fitted (CV) 0.587 -> rules kept; top: [('elev_sq', 0.811), ('pa_temporary', -0.594), ('ft_birch', -0.544), ('rule', 0.418), ('pa_rough', -0.401), ('ph', -0.382)]"
+ },
+ {
+  "t": "02:31:21",
+  "level": "info",
+  "msg": "scotland-highland hydnum: n=467 rule AUC 0.467 fitted (CV) 0.525 -> rules kept; top: [('ft_birch', -0.576), ('pa_temporary', -0.531), ('ph', -0.51), ('ft_mixed', -0.472), ('elev_sq', 0.437), ('pl_recent', -0.276)]"
+ },
+ {
+  "t": "02:31:21",
+  "level": "info",
+  "msg": "weather history: 0 cells cached, fetching 58"
+ },
+ {
+  "t": "02:31:47",
+  "level": "warn",
+  "msg": "history HTTP 429: {\"error\":true,\"reason\":\"Minutely API request limit exceeded. Please try again in one minute.\"}; retry in 70s"
+ },
+ {
+  "t": "02:33:18",
+  "level": "warn",
+  "msg": "history ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "02:34:49",
+  "level": "warn",
+  "msg": "history ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "02:35:30",
+  "level": "warn",
+  "msg": "history ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "02:36:48",
+  "level": "warn",
+  "msg": "history ReadTimeout; retry in 20s"
+ },
+ {
+  "t": "02:37:22",
+  "level": "info",
+  "msg": "timing FR psilocybe: n=0 rule test AUC None fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:23",
+  "level": "info",
+  "msg": "timing FR agaricus: n=8 rule test AUC None fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:24",
+  "level": "info",
+  "msg": "timing FR boletus: n=40 rule test AUC 0.6333333333333333 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:26",
+  "level": "info",
+  "msg": "timing FR cantharellus: n=27 rule test AUC 0.466796875 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:28",
+  "level": "info",
+  "msg": "timing FR craterellus_tubaeformis: n=19 rule test AUC 0.7178819444444444 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:29",
+  "level": "info",
+  "msg": "timing FR craterellus_cornucopioides: n=9 rule test AUC 0.7578125 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:29",
+  "level": "info",
+  "msg": "timing FR hydnum: n=13 rule test AUC None fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:31",
+  "level": "info",
+  "msg": "timing RO psilocybe: n=0 rule test AUC None fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:32",
+  "level": "info",
+  "msg": "timing RO agaricus: n=2 rule test AUC None fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:33",
+  "level": "info",
+  "msg": "timing RO boletus: n=13 rule test AUC 0.4921875 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:36",
+  "level": "info",
+  "msg": "timing RO cantharellus: n=8 rule test AUC 0.734375 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:37",
+  "level": "info",
+  "msg": "timing RO craterellus_tubaeformis: n=2 rule test AUC None fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:38",
+  "level": "info",
+  "msg": "timing RO craterellus_cornucopioides: n=3 rule test AUC None fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:39",
+  "level": "info",
+  "msg": "timing RO hydnum: n=0 rule test AUC None fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:41",
+  "level": "info",
+  "msg": "timing GB-SCT psilocybe: n=6 rule test AUC 0.3611111111111111 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:43",
+  "level": "info",
+  "msg": "timing GB-SCT agaricus: n=34 rule test AUC 0.59625 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:45",
+  "level": "info",
+  "msg": "timing GB-SCT boletus: n=377 rule test AUC 0.645637713294129 fitted test 0.6159934445194254 params {'lag': [14, 19], 'rain_need': 50, 'temp': [6, 9, 15, 18]} -> rules kept"
+ },
+ {
+  "t": "02:37:48",
+  "level": "info",
+  "msg": "timing GB-SCT cantharellus: n=443 rule test AUC 0.5664428164428165 fitted test 0.6214618714618715 params {'lag': [3, 8], 'rain_need': 35, 'temp': [6, 9, 19, 22]} -> LEARNED"
+ },
+ {
+  "t": "02:37:50",
+  "level": "info",
+  "msg": "timing GB-SCT craterellus_tubaeformis: n=80 rule test AUC 0.4324 fitted test 0.5 params {'lag': [3, 8], 'rain_need': 20, 'temp': [-4, -1, 13, 16]} -> rules kept"
+ },
+ {
+  "t": "02:37:52",
+  "level": "info",
+  "msg": "timing GB-SCT craterellus_cornucopioides: n=7 rule test AUC 0.5868055555555556 fitted test None params None -> rules kept"
+ },
+ {
+  "t": "02:37:53",
+  "level": "info",
+  "msg": "timing GB-SCT hydnum: n=179 rule test AUC 0.6350574712643678 fitted test 0.664576802507837 params {'lag': [10, 15], 'rain_need': 10, 'temp': [4, 7, 13, 16]} -> LEARNED"
+ },
+ {
+  "t": "02:37:55",
+  "level": "info",
+  "msg": "drought check massif-central-alps 2026: Chastanier -416.7 mm (driest rank 1/36), Saint-Agrève -388.1 mm (driest rank 1/36), Pilat (Le Bessat) -335.4 mm (driest rank 1/36), Matheysine (La Mure) -371.2 mm (driest rank 1/36)"
+ },
+ {
+  "t": "02:37:55",
+  "level": "info",
+  "msg": "drought check brasov-fagaras 2026: Brașov -236.1 mm (driest rank 4/36), Viștea / Viștișoara -264.3 mm (driest rank 3/36), Poiana Brașov -157.6 mm (driest rank 3/36), Zărnești -261.3 mm (driest rank 2/36)"
+ },
+ {
+  "t": "02:37:55",
+  "level": "info",
+  "msg": "drought check scotland-south 2026: Edinburgh -34.3 mm (driest rank 18/36), Peebles 122.2 mm (driest rank 27/36), Moffat 350.2 mm (driest rank 31/36), Glentrool 444.6 mm (driest rank 33/36)"
+ },
+ {
+  "t": "02:37:55",
+  "level": "info",
+  "msg": "drought check scotland-highland 2026: Pitlochry 17.8 mm (driest rank 9/36), Aberfeldy 75.6 mm (driest rank 18/36), Aviemore 23.3 mm (driest rank 12/36), Braemar 64.8 mm (driest rank 15/36)"
+ },
+ {
+  "t": "02:37:55",
+  "level": "info",
+  "msg": "climate: 0 requests; written to calibration/climate.json"
+ },
+ {
+  "t": "02:37:55",
+  "level": "info",
+  "msg": "calibration written"
+ }
+]
